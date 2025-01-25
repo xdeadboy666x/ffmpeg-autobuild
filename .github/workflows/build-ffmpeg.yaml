@@ -112,6 +112,9 @@ jobs:
 
       - name: Compile FFmpeg
         run: |
+          sudo apt update
+          sudo apt-get install subversion ragel curl texinfo g++ ed bison flex cvs yasm automake libtool autoconf gcc cmake git make pkg-config zlib1g-dev unzip pax nasm gperf autogen bzip2 autoconf-archive p7zip-full meson clang python3-distutils python-is-python3 -y
+          echo "Starting"
           ./cross_compile_ffmpeg.sh \
           --ffmpeg-source-dir=$GITHUB_WORKSPACE/ffmpeg-source \
           --gcc-cpu-count=$(nproc) \
