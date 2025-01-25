@@ -90,15 +90,6 @@ jobs:
           persist-credentials: false
           path: ffmpeg-source
 
-      - name: Install dependencies
-        run: |
-          sudo apt update
-          sudo apt install -y ragel cvs yasm pax nasm gperf autogen autoconf-archive \
-              subversion curl texinfo g++ ed bison flex automake libtool autoconf gcc cmake git make \
-              pkg-config zlib1g-dev unzip bzip2 p7zip-full clang build-essential git-core \
-              libass-dev libfreetype6-dev libgnutls28-dev libmp3lame-dev libsdl2-dev libtool \
-              libva-dev libvdpau-dev libvorbis-dev libxcb1-dev libxcb-shm0-dev libxcb-xfixes0-dev \
-              python-is-python3
       - name: Install pip dependencies
         run: sudo -H pip3 install -qq setuptools meson ninja
 
