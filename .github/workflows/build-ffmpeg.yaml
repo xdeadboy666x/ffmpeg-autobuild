@@ -112,7 +112,10 @@ jobs:
       - name: Cache build directory
         uses: actions/cache@v3
         with:
-          path: $GITHUB_WORKSPACE/sandbox/cross_compilers
+          path: |
+            $GITHUB_WORKSPACE/sandbox
+            $GITHUB_WORKSPACE/sandbox/cross_compilers
+            $GITHUB_WORKSPACE/sandbox/pkgs
           key: ${{ runner.os }}-ffmpeg-build-${{ needs.check.outputs.git-sha }}
           restore-keys: |
             ${{ runner.os }}-ffmpeg-build-
