@@ -122,15 +122,7 @@ jobs:
             --disable-nonfree=n \
             --sandbox-ok=y \
             --compiler-flavors=${{ matrix.os }}
-      - name: Set retention days
-        id: retention-days
-        run: |
-          if [[ "${{ inputs.no_release }}" == "true" ]]; then
-            echo "retention=0" >> $GITHUB_OUTPUT
-          else
-            echo "retention=1" >> $GITHUB_OUTPUT
-          fi
-          
+
       - name: Upload FFmpeg binaries
         uses: actions/upload-artifact@v4
         with:
@@ -139,5 +131,7 @@ jobs:
             ffmpeg-source/ffmpeg.exe
             ffmpeg-source/ffprobe.exe
             ffmpeg-source/ffplay.exe
-          retention-days: ${{ steps.retention-days.outputs.retention }}
+          retention-days: ${{ inputs.no_release == 'true' ? 0 : 1 }}
 
+    outputs:
+      git-date: ${{ steps.git-date.outputs.git-date }}
