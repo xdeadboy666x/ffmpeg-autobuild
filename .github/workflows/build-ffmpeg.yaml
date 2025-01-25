@@ -101,14 +101,15 @@ jobs:
 
       - name: Compile FFmpeg
         run: |
-          sudo -H pip3 install -qq setuptools meson ninja
-          sudo apt-get install subversion ragel curl texinfo g++ ed libva-dev bison flex cvs yasm automake libtool autoconf gcc cmake git make pkg-config zlib1g-dev unzip pax nasm gperf autogen bzip2 autoconf-archive p7zip-full clang build-essential git-core libass-dev libfreetype6-dev libgnutls28-dev libmp3lame-dev libsdl2-dev libva-dev libvdpau-dev libvorbis-dev libxcb1-dev libxcb-shm0-dev libxcb-xfixes0-dev python-is-python3 meson autotools-dev gettext svn makeinfo patch wget xz realpath python3-distutils python-is-python3 -y
+          sudo apt-get update
+          sudo apt-get install -y subversion ragel curl texinfo g++ ed libva-dev bison flex cvs yasm automake libtool autoconf gcc cmake git make pkg-config zlib1g-dev unzip pax nasm gperf autogen bzip2 autoconf-archive p7zip-full clang build-essential git-core libass-dev libfreetype6-dev libgnutls28-dev libmp3lame-dev libsdl2-dev libva-dev libvdpau-dev libvorbis-dev libxcb1-dev libxcb-shm0-dev libxcb-xfixes0-dev python-is-python3 meson autotools-dev gettext patch wget
           ./cross_compile_ffmpeg.sh \
-            --ffmpeg-source-dir=$GITHUB_WORKSPACE/ffmpeg-source \
-            --gcc-cpu-count=$(nproc) \
-            --disable-nonfree=n \
-            --sandbox-ok=y \
-            --compiler-flavors=${{ matrix.os }}
+          --ffmpeg-source-dir=$GITHUB_WORKSPACE/ffmpeg-source \
+          --gcc-cpu-count=$(nproc) \
+          --disable-nonfree=n \
+          --sandbox-ok=y \
+          --compiler-flavors=win64
+          
       - name: Upload FFmpeg binaries
         uses: actions/upload-artifact@v4
         with:
