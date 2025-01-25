@@ -109,15 +109,23 @@ jobs:
           --disable-nonfree=n \
           --sandbox-ok=y \
           --compiler-flavors=win64
-          
+
+      - name: Cache build directory
+        uses: actions/cache@v3
+        with:
+          path: $GITHUB_WORKSPACE/sandbox
+          key: ${{ runner.os }}-ffmpeg-build-${{ needs.check.outputs.git-sha }}
+          restore-keys: |
+            ${{ runner.os }}-ffmpeg-build-
+
       - name: Upload FFmpeg binaries
         uses: actions/upload-artifact@v4
         with:
           name: ffmpeg-${{ matrix.os }}
           path: |
-            ffmpeg-source/ffmpeg.exe
-            ffmpeg-source/ffprobe.exe
-            ffmpeg-source/ffplay.exe
+            $GITHUB_WORKSPACE/sandbox/ffmpeg.exe
+            $GITHUB_WORKSPACE/sandbox/ffprobe.exe
+            $GITHUB_WORKSPACE/sandbox/ffplay.exe
           retention-days: ${{ inputs.no_release == 'true' && '0' || '1' }}
 
     outputs:
