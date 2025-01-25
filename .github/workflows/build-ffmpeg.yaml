@@ -1,7 +1,3 @@
-Your workflow YAML can be refactored to improve readability, reduce duplication, and make it more modular. Below is a cleaned-up version with reusable elements and streamlined steps:
-
-Refactored YAML
-
 name: Build FFmpeg
 on:
   schedule:
@@ -65,8 +61,10 @@ jobs:
       - name: Check for newer commits
         if: ${{ !inputs.force_build }}
         run: |
-          [ "${{ steps.ffmpeg-info.outputs.git-sha-short }}" != "${{ steps.ffmpeg-autobuild-info.outputs.git-sha }}" ] ||
-          [ "${{ steps.ffmpeg-helper-info.outputs.git-sha-short }}" != "${{ steps.ffmpeg-autobuild-info.outputs.helper-git-sha }}" ]
+          if [[ "${{ steps.ffmpeg-info.outputs.git-sha-short }}" != "${{ steps.ffmpeg-autobuild-info.outputs.git-sha }}" ]] ||
+             [[ "${{ steps.ffmpeg-helper-info.outputs.git-sha-short }}" != "${{ steps.ffmpeg-autobuild-info.outputs.helper-git-sha }}" ]]; then
+             exit 1
+          fi
 
     outputs:
       git-sha: ${{ steps.ffmpeg-info.outputs.git-sha }}
@@ -124,7 +122,15 @@ jobs:
             --disable-nonfree=n \
             --sandbox-ok=y \
             --compiler-flavors=${{ matrix.os }}
-
+      - name: Set retention days
+        id: retention-days
+        run: |
+          if [[ "${{ inputs.no_release }}" == "true" ]]; then
+            echo "retention=0" >> $GITHUB_OUTPUT
+          else
+            echo "retention=1" >> $GITHUB_OUTPUT
+          fi
+          
       - name: Upload FFmpeg binaries
         uses: actions/upload-artifact@v4
         with:
@@ -133,28 +139,5 @@ jobs:
             ffmpeg-source/ffmpeg.exe
             ffmpeg-source/ffprobe.exe
             ffmpeg-source/ffplay.exe
-          retention-days: ${{ inputs.no_release == 'true' && '0' || '1' }}
-
-    outputs:
-      git-date: ${{ steps.git-date.outputs.git-date }}
-
-Changes Made:
-
-1. Consolidated APT Dependencies: Grouped into a single installation step for clarity.
-
-
-2. Reduced Code Duplication: Combined repetitive logic (like dependency installation).
-
-
-3. Improved Readability: Reformatted commands and grouped related tasks logically.
-
-
-4. Clear Variable Names: Added consistent and descriptive names to avoid confusion.
-
-
-5. Shortened if Conditions: Simplified conditional checks for better readability.
-
-
-
-This version is easier to maintain while retaining the original functionality.
+          retention-days: ${{ steps.retention-days.outputs.retention }}
 
