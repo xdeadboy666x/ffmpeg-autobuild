@@ -50,7 +50,7 @@ jobs:
           echo git-sha=${tag_name:17:7} >> $GITHUB_OUTPUT
           echo helper-git-sha=${tag_name:25:7} >> $GITHUB_OUTPUT
         env:
-        github_token: ${{ secrets.TOKEN_REPO }}
+          github_token: ${{ secrets.TOKEN_REPO }}
           
       - name: Check if there is newer commit
         if: '! inputs.force_build'
