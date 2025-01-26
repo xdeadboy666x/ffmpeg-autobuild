@@ -1,4 +1,4 @@
-name: Build FFmpeg
+7name: Build FFmpeg
 on:
   schedule:
     - cron: '7 11 * * 0'
@@ -71,7 +71,7 @@ jobs:
       helper-git-sha: ${{ steps.ffmpeg-helper-info.outputs.git-sha }}
       helper-git-sha-short: ${{ steps.ffmpeg-helper-info.outputs.git-sha-short }}
 
-  jobs:
+jobs:
   check:
     runs-on: ubuntu-latest
     steps:
