@@ -109,7 +109,7 @@ jobs:
           path: ffmpeg-source
 
       - name: Install dependencies
-        run: sudo apt-get install -y build-essential zlib1g-dev
+        run: sudo pip3 -qq install setuptools meson ninja
 
       - name: Compile FFmpeg
         run: |
