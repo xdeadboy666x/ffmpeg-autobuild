@@ -108,16 +108,40 @@ jobs:
           persist-credentials: false
           path: ffmpeg-source
 
-      - name: Install dependencies
-        run: sudo pip3 -qq install setuptools meson ninja
+      - name: Install APT dependencies
+        uses: awalsh128/cache-apt-pkgs-action@v1
+        with:
+          packages: ragel cvs yasm pax nasm gperf autogen autoconf-archive
 
-      - name: Compile FFmpeg
+      - name: Install pip dependencies
+        run: sudo -H pip3 -qq install setuptools meson ninja      
+
+      - name: Get current FFmpeg git date
+        id: git-date
+        working-directory: ffmpeg-source
+        run: echo git-date=$(git log -1 --format=%ci) >> $GITHUB_OUTPUT
+
+      - name: Get current date & time before build
+        id: date-time-before
+        run: echo date-time=$(date +'%Y-%m-%d %H:%M') >> $GITHUB_OUTPUT
+
+      - name: Cache FFmpeg build directory
+        uses: actions/cache@v4
+        with:
+          path: ./build
+          key: build-cache-${{ matrix.os }}-${{ needs.check.outputs.git-sha }}
+          restore-keys: build-cache-${{ matrix.os }}-
+
+      - name: Compile FFmpeg ${{ needs.check.outputs.git-sha-short }} using ffmpeg-windows-build-helpers ${{ needs.check.outputs.helper-git-sha-short }}
         run: |
           sudo apt-get update
-          sudo apt-get install subversion ragel curl texinfo g++ ed libva-dev bison flex cvs yasm automake libtool autoconf gcc cmake git make pkg-config zlib1g-dev unzip pax nasm gperf autogen bzip2 autoconf-archive p7zip-full clang build-essential git-core libass-dev libfreetype6-dev libgnutls28-dev libmp3lame-dev libsdl2-dev libva-dev libvdpau-dev libvorbis-dev libxcb1-dev libxcb-shm0-dev libxcb-xfixes0-dev python-is-python3 meson autotools-dev gettext svn makeinfo patch wget xz realpath python3-distutils python-is-python3 -y
+          sudo apt-get install -y subversion ragel curl texinfo g++ ed libva-dev bison flex cvs yasm automake libtool autoconf gcc cmake git make pkg-config zlib1g-dev unzip pax nasm gperf autogen bzip2 autoconf-archive p7zip-full clang build-essential git-core libass-dev libfreetype6-dev libgnutls28-dev libmp3lame-dev libsdl2-dev libva-dev libvdpau-dev libvorbis-dev libxcb1-dev libxcb-shm0-dev libxcb-xfixes0-dev python-is-python3 meson autotools-dev gettext patch wget
           ./cross_compile_ffmpeg.sh \
-            --ffmpeg-source-dir=$GITHUB_WORKSPACE/ffmpeg-source \
-            --compiler-flavors=win64
+          --ffmpeg-source-dir=$GITHUB_WORKSPACE/ffmpeg-source \
+          --gcc-cpu-count=$(nproc) \
+          --disable-nonfree=n \
+          --sandbox-ok=y \
+          --compiler-flavors=win64
 
       - name: Get current date & time after build
         id: date-time-after
