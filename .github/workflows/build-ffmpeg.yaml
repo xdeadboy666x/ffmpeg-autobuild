@@ -46,9 +46,15 @@ jobs:
       - name: Get ffmpeg-autobuild latest build
         id: ffmpeg-autobuild-info
         run: |
-          tag_name=$(gh api repos/$GITHUB_REPOSITORY/releases/latest -q .tag_name)
-          echo git-sha=${tag_name:17:7} >> $GITHUB_OUTPUT
-          echo helper-git-sha=${tag_name:25:7} >> $GITHUB_OUTPUT
+          tag_name=$(gh api repos/$GITHUB_REPOSITORY/releases/latest -q .tag_name || echo "none")
+          if [ "$tag_name" != "none" ]; then
+            echo git-sha=${tag_name:17:7} >> $GITHUB_OUTPUT
+            echo helper-git-sha=${tag_name:25:7} >> $GITHUB_OUTPUT
+          else
+            echo "No releases found"
+            echo git-sha="none" >> $GITHUB_OUTPUT
+            echo helper-git-sha="none" >> $GITHUB_OUTPUT
+          fi
         env:
           GH_TOKEN: ${{ secrets.TOKEN_REPO }}
           
