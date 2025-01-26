@@ -70,8 +70,7 @@ jobs:
       helper-git-owner: ${{ steps.ffmpeg-helper-info.outputs.git-owner }}
       helper-git-sha: ${{ steps.ffmpeg-helper-info.outputs.git-sha }}
       helper-git-sha-short: ${{ steps.ffmpeg-helper-info.outputs.git-sha-short }}
-
-jobs:
+  
   check:
     runs-on: ubuntu-latest
     steps:
