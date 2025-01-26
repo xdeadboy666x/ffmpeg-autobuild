@@ -207,12 +207,21 @@ jobs:
           retention-days: ${{ inputs.no_release && '0' || '1' }}
 
     outputs:
+      date-time-before: ${{ steps.date-time-before.outputs.date-time }}
       date-time-after: ${{ steps.date-time-after.outputs.date-time }}
       date-time-after-tag: ${{ steps.date-time-after.outputs.date-time-tag }}
+      git-date: ${{ steps.git-date.outputs.git-date }}
 
   archive:
-    needs: build
+    permissions:
+      id-token: write
+      attestations: write
+    needs: [check, build]
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [win64]
+
     steps:
       - name: Download FFmpeg binaries
         uses: actions/download-artifact@v4
@@ -224,31 +233,47 @@ jobs:
           echo "This version of ffmpeg has nonfree parts compiled in." >> LICENSE
           echo "Therefore it is not legally redistributable." >> LICENSE
           
-      - name: Compress binaries
-        run: 7z a -mx9 ffmpeg-${{ needs.check.outputs.git-sha-short }}-${{ matrix.os }}.7z ff*.exe LICENSE
+      - name: Generate artifact attestation for FFmpeg binaries
+        if: '! inputs.no_release'
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: ff*.exe
+
+      - name: 7-Zip FFmpeg binaries
+        run: 7z a -mx9 ffmpeg-${{ needs.check.outputs.git-sha-short }}-${{ needs.check.outputs.helper-git-sha-short }}-${{ matrix.os }}-nonfree.7z ff{mpeg,probe,play}.exe LICENSE
+
+      - name: Generate artifact attestation for FFmpeg archive
+        if: '! inputs.no_release'
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: ffmpeg-${{ needs.check.outputs.git-sha-short }}-${{ needs.check.outputs.helper-git-sha-short }}-${{ matrix.os }}-nonfree.7z
 
       - name: Upload FFmpeg archive
         uses: actions/upload-artifact@v4
         with:
           name: ffmpeg-archive-${{ matrix.os }}
-          path: ffmpeg-${{ needs.check.outputs.git-sha-short }}-${{ matrix.os }}.7z
+          path: ffmpeg-${{ needs.check.outputs.git-sha-short }}-${{ needs.check.outputs.helper-git-sha-short }}-${{ matrix.os }}-nonfree.7z
+          retention-days: ${{ inputs.no_release && '0' || '1' }}
+          compression-level: 0
 
   release:
-    needs: archive
-    if: "! inputs.no_release"
+    needs: [check, build, archive]
+    if: '! inputs.no_release'
     runs-on: ubuntu-latest
     steps:
       - name: Download FFmpeg archives
         uses: actions/download-artifact@v4
         with:
-          name: ffmpeg-archive-${{ matrix.os }}
+          pattern: ffmpeg-archive-*
+          merge-multiple: true
 
-      - name: Create GitHub release
+      - name: Release FFmpeg archives
         run: |
-          gh release create \
-          "${{ needs.build.outputs.date-time-after-tag }}-${{ needs.check.outputs.git-sha-short }}" \
-          ffmpeg-${{ needs.check.outputs.git-sha-short }}-${{ matrix.os }}.7z \
-          -t "${{ needs.build.outputs.date-time-after }}" \
-          -n "FFmpeg built on ${{ needs.build.outputs.date-time-after }}."
+          gh release create "${{ needs.build.outputs.date-time-after-tag }}-${{ needs.check.outputs.git-sha-short }}-${{ needs.check.outputs.helper-git-sha-short }}" \
+          ffmpeg-${{ needs.check.outputs.git-sha-short }}-${{ needs.check.outputs.helper-git-sha-short }}-{win64,win32}-nonfree.7z \
+          -n "FFmpeg nonfree git-${{ needs.check.outputs.git-sha }} in ${{ needs.build.outputs.git-date }} built on ${{ needs.build.outputs.date-time-after }} started at ${{ needs.build.outputs.date-time-before }}
+          Using ${{ needs.check.outputs.helper-git-owner }}/ffmpeg-windows-build-helpers git-${{ needs.check.outputs.helper-git-sha }}" \
+          -t "${{ needs.build.outputs.date-time-after }} ${{ needs.check.outputs.git-sha-short }}"
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.TOKEN_REPO
+          GH_REPO: ${{ github.repository }}
