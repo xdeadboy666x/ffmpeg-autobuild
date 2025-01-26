@@ -1,5 +1,4 @@
 name: Build FFmpeg
-
 on:
   schedule:
     - cron: '7 11 * * 0'
@@ -16,10 +15,10 @@ on:
         type: boolean
   watch:
     types: [started]
-
+    
 concurrency:
   group: ${{ github.workflow }}
-
+  
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -32,7 +31,7 @@ jobs:
           echo git-sha-short=${git_sha::7} >> $GITHUB_OUTPUT
         env:
           GH_TOKEN: ${{ secrets.TOKEN_REPO }}
-
+          
       - name: Get ${{ inputs.use_own_fork && github.repository_owner || 'xdeadboy666x' }}/ffmpeg-windows-build-helpers latest commit
         id: ffmpeg-helper-info
         run: |
@@ -43,7 +42,7 @@ jobs:
           echo git-sha-short=${git_sha::7} >> $GITHUB_OUTPUT
         env:
           GH_TOKEN: ${{ secrets.TOKEN_REPO }}
-
+          
       - name: Get ffmpeg-autobuild latest build
         id: ffmpeg-autobuild-info
         run: |
@@ -58,25 +57,27 @@ jobs:
           fi
         env:
           GH_TOKEN: ${{ secrets.TOKEN_REPO }}
-
-      - name: Check if there is a newer commit
-        if: "! inputs.force_build"
-        run: |
+          
+      - name: Check if there is newer commit
+        if: '! inputs.force_build'
+        run: >
           [[ "${{ steps.ffmpeg-info.outputs.git-sha-short }}" != "${{ steps.ffmpeg-autobuild-info.outputs.git-sha }}" ]] ||
           [[ "${{ steps.ffmpeg-helper-info.outputs.git-sha-short }}" != "${{ steps.ffmpeg-autobuild-info.outputs.helper-git-sha }}" ]]
-        outputs:
-          git-sha: ${{ steps.ffmpeg-info.outputs.git-sha }}
-          git-sha-short: ${{ steps.ffmpeg-info.outputs.git-sha-short }}
-          helper-git-owner: ${{ steps.ffmpeg-helper-info.outputs.git-owner }}
-          helper-git-sha: ${{ steps.ffmpeg-helper-info.outputs.git-sha }}
-          helper-git-sha-short: ${{ steps.ffmpeg-helper-info.outputs.git-sha-short }}
-
+          
+    outputs:
+      git-sha: ${{ steps.ffmpeg-info.outputs.git-sha }}
+      git-sha-short: ${{ steps.ffmpeg-info.outputs.git-sha-short }}
+      helper-git-owner: ${{ steps.ffmpeg-helper-info.outputs.git-owner }}
+      helper-git-sha: ${{ steps.ffmpeg-helper-info.outputs.git-sha }}
+      helper-git-sha-short: ${{ steps.ffmpeg-helper-info.outputs.git-sha-short }}
+      
   build:
     needs: check
     runs-on: ubuntu-latest
     strategy:
       matrix:
         os: [win64]
+        
     steps:
       - name: Checkout ${{ needs.check.outputs.helper-git-owner }}/ffmpeg-windows-build-helpers
         uses: actions/checkout@v4
@@ -84,7 +85,7 @@ jobs:
           repository: ${{ needs.check.outputs.helper-git-owner }}/ffmpeg-windows-build-helpers
           ref: ${{ needs.check.outputs.helper-git-sha }}
           persist-credentials: false
-
+          
       - name: Checkout FFmpeg
         uses: actions/checkout@v4
         with:
@@ -92,26 +93,24 @@ jobs:
           ref: ${{ needs.check.outputs.git-sha }}
           persist-credentials: false
           path: ffmpeg-source
-
+          
       - name: Install APT dependencies
         uses: awalsh128/cache-apt-pkgs-action@v1
         with:
           packages: ragel cvs yasm pax nasm gperf autogen autoconf-archive
-
-      - name: Install pip dependencies
-        run: sudo -H pip3 -qq install setuptools meson ninja
-
+        
       - name: Get current FFmpeg git date
         id: git-date
         working-directory: ffmpeg-source
         run: echo git-date=$(git log -1 --format=%ci) >> $GITHUB_OUTPUT
-
+        
       - name: Get current date & time before build
         id: date-time-before
         run: echo date-time=$(date +'%Y-%m-%d %H:%M') >> $GITHUB_OUTPUT
-
+        
       - name: Compile FFmpeg ${{ needs.check.outputs.git-sha-short }} using ffmpeg-windows-build-helpers ${{ needs.check.outputs.helper-git-sha-short }}
         run: |
+          sudo -H pip3 -qq install setuptools meson ninja wheel \
           sudo apt-get update -qq && sudo apt-get -y install \
             autoconf \
             automake \
@@ -166,13 +165,12 @@ jobs:
             --disable-nonfree=n \
             --sandbox-ok=y \
             --compiler-flavors=win64
-
       - name: Get current date & time after build
         id: date-time-after
         run: |
           echo date-time=$(date +'%Y-%m-%d %H:%M') >> $GITHUB_OUTPUT
           echo date-time-tag=$(date +'%Y-%m-%d-%H-%M') >> $GITHUB_OUTPUT
-
+          
       - name: Upload FFmpeg binaries
         uses: actions/upload-artifact@v4
         with:
@@ -183,6 +181,7 @@ jobs:
             ffmpeg-source/ffplay.exe
           if-no-files-found: error
           retention-days: ${{ inputs.no_release && '0' || '1' }}
+          
     outputs:
       date-time-before: ${{ steps.date-time-before.outputs.date-time }}
       date-time-after: ${{ steps.date-time-after.outputs.date-time }}
