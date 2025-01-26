@@ -95,7 +95,7 @@ jobs:
           path: ffmpeg-source
 
       - name: Install pip dependencies
-        run: sudo -H pip3 -qq install setuptools meson ninja wheel
+        run: sudo -H pip3 -qq install setuptools meson ninja
         
       - name: Install APT dependencies
         uses: awalsh128/cache-apt-pkgs-action@v1
@@ -113,7 +113,7 @@ jobs:
         
       - name: Compile FFmpeg ${{ needs.check.outputs.git-sha-short }} using ffmpeg-windows-build-helpers ${{ needs.check.outputs.helper-git-sha-short }}
         run: |
-          sudo -H pip3 -qq install setuptools meson ninja wheel \
+          sudo -H pip3 -qq install setuptools meson ninja
           sudo apt-get update -qq && sudo apt-get -y install \
             autoconf \
             automake \
