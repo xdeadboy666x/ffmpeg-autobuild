@@ -115,7 +115,6 @@ jobs:
         run: |
           ./cross_compile_ffmpeg.sh \
             --ffmpeg-source-dir=$GITHUB_WORKSPACE/ffmpeg-source \
-            --sandbox-dir=$GITHUB_WORKSPACE/sandbox \
             --compiler-flavors=win64
 
       - name: Get current date & time after build
