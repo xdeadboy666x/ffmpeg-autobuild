@@ -30,8 +30,8 @@ jobs:
           echo git-sha=$git_sha >> $GITHUB_OUTPUT
           echo git-sha-short=${git_sha::7} >> $GITHUB_OUTPUT
         env:
-          GH_TOKEN: ${{  secrets.TOKEN_REPO  }}
-         
+          GH_TOKEN: ${{ secrets.TOKEN_REPO }}
+
       - name: Get ${{ inputs.use_own_fork && github.repository_owner || 'xdeadboy666x' }}/ffmpeg-windows-build-helpers latest commit
         id: ffmpeg-helper-info
         run: |
@@ -42,7 +42,7 @@ jobs:
           echo git-sha-short=${git_sha::7} >> $GITHUB_OUTPUT
         env:
           GH_TOKEN: ${{ secrets.TOKEN_REPO }}
-          
+
       - name: Get ffmpeg-autobuild latest build
         id: ffmpeg-autobuild-info
         run: |
@@ -57,10 +57,10 @@ jobs:
           fi
         env:
           GH_TOKEN: ${{ secrets.TOKEN_REPO }}
-          
+
       - name: Check if there is newer commit
-        if: '! inputs.force_build'
-        run: >
+        if: "! inputs.force_build"
+        run: |
           [[ "${{ steps.ffmpeg-info.outputs.git-sha-short }}" != "${{ steps.ffmpeg-autobuild-info.outputs.git-sha }}" ]] ||
           [[ "${{ steps.ffmpeg-helper-info.outputs.git-sha-short }}" != "${{ steps.ffmpeg-autobuild-info.outputs.helper-git-sha }}" ]]
           
@@ -70,51 +70,54 @@ jobs:
       helper-git-owner: ${{ steps.ffmpeg-helper-info.outputs.git-owner }}
       helper-git-sha: ${{ steps.ffmpeg-helper-info.outputs.git-sha }}
       helper-git-sha-short: ${{ steps.ffmpeg-helper-info.outputs.git-sha-short }}
-      
-build:
-  needs: check
-  runs-on: ubuntu-latest
-  strategy:
-    matrix:
-      os: [win64]
 
-  steps:
-    - name: Restore cached cross-compilers
-      uses: actions/cache@v4
-      with:
-        path: ./sandbox/cross_compilers
-        key: cross-compilers-cache-${{ matrix.os }}-${{ needs.check.outputs.git-sha }}
+  build:
+    needs: check
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [win64]
 
-    - name: Restore cached libraries
-      uses: actions/cache@v4
-      with:
-        path: ./sandbox/libs
-        key: libraries-cache-${{ matrix.os }}-${{ needs.check.outputs.git-sha }}
+    steps:
+      - name: Restore cached cross-compilers
+        uses: actions/cache@v4
+        with:
+          path: ./sandbox/cross_compilers
+          key: cross-compilers-cache-${{ matrix.os }}-${{ needs.check.outputs.git-sha }}
+          restore-keys: cross-compilers-cache-${{ matrix.os }}-
 
-    - name: Checkout ${{ needs.check.outputs.helper-git-owner }}/ffmpeg-windows-build-helpers
-      uses: actions/checkout@v4
-      with:
-        repository: ${{ needs.check.outputs.helper-git-owner }}/ffmpeg-windows-build-helpers
-        ref: ${{ needs.check.outputs.helper-git-sha }}
-        persist-credentials: false
+      - name: Restore cached libraries
+        uses: actions/cache@v4
+        with:
+          path: ./sandbox/libs
+          key: libraries-cache-${{ matrix.os }}-${{ needs.check.outputs.git-sha }}
+          restore-keys: libraries-cache-${{ matrix.os }}-
 
-    - name: Checkout FFmpeg
-      uses: actions/checkout@v4
-      with:
-        repository: FFmpeg/FFmpeg
-        ref: ${{ needs.check.outputs.git-sha }}
-        persist-credentials: false
-        path: ffmpeg-source
+      - name: Checkout ${{ needs.check.outputs.helper-git-owner }}/ffmpeg-windows-build-helpers
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ needs.check.outputs.helper-git-owner }}/ffmpeg-windows-build-helpers
+          ref: ${{ needs.check.outputs.helper-git-sha }}
+          persist-credentials: false
 
-    - name: Install dependencies
-      run: sudo apt-get install -y build-essential zlib1g-dev
+      - name: Checkout FFmpeg
+        uses: actions/checkout@v4
+        with:
+          repository: FFmpeg/FFmpeg
+          ref: ${{ needs.check.outputs.git-sha }}
+          persist-credentials: false
+          path: ffmpeg-source
 
-    - name: Compile FFmpeg
-      run: ./cross_compile_ffmpeg.sh \
-        --ffmpeg-source-dir=$GITHUB_WORKSPACE/ffmpeg-source \
-        --sandbox-dir=$GITHUB_WORKSPACE/sandbox \
-        --compiler-flavors=win64
-          
+      - name: Install dependencies
+        run: sudo apt-get install -y build-essential zlib1g-dev
+
+      - name: Compile FFmpeg
+        run: |
+          ./cross_compile_ffmpeg.sh \
+            --ffmpeg-source-dir=$GITHUB_WORKSPACE/ffmpeg-source \
+            --sandbox-dir=$GITHUB_WORKSPACE/sandbox \
+            --compiler-flavors=win64
+
       - name: Get current date & time after build
         id: date-time-after
         run: |
@@ -131,75 +134,50 @@ build:
             ffmpeg-source/ffplay.exe
           if-no-files-found: error
           retention-days: ${{ inputs.no_release && '0' || '1' }}
-          
+
     outputs:
-      date-time-before: ${{ steps.date-time-before.outputs.date-time }}
       date-time-after: ${{ steps.date-time-after.outputs.date-time }}
       date-time-after-tag: ${{ steps.date-time-after.outputs.date-time-tag }}
-      git-date: ${{ steps.git-date.outputs.git-date }}
-      
+
   archive:
-    permissions:
-      id-token: write
-      attestations: write
-    needs: [check, build]
+    needs: build
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        os: [win64]
-        
     steps:
       - name: Download FFmpeg binaries
         uses: actions/download-artifact@v4
         with:
           name: ffmpeg-${{ matrix.os }}
-          
+
       - name: Create LICENSE
         run: |
           echo "This version of ffmpeg has nonfree parts compiled in." >> LICENSE
           echo "Therefore it is not legally redistributable." >> LICENSE
           
-      - name: Generate artifact attestation for FFmpeg binaries
-        if: '! inputs.no_release'
-        uses: actions/attest-build-provenance@v2
-        with:
-          subject-path: ff*.exe
-          
-      - name: 7-Zip FFmpeg binaries
-        run: 7z a -mx9 ffmpeg-${{ needs.check.outputs.git-sha-short }}-${{ needs.check.outputs.helper-git-sha-short }}-${{ matrix.os }}-nonfree.7z ff{mpeg,probe,play}.exe LICENSE
-        
-      - name: Generate artifact attestation for FFmpeg archive
-        if: '! inputs.no_release'
-        uses: actions/attest-build-provenance@v2
-        with:
-          subject-path: ffmpeg-${{ needs.check.outputs.git-sha-short }}-${{ needs.check.outputs.helper-git-sha-short }}-${{ matrix.os }}-nonfree.7z
-          
+      - name: Compress binaries
+        run: 7z a -mx9 ffmpeg-${{ needs.check.outputs.git-sha-short }}-${{ matrix.os }}.7z ff*.exe LICENSE
+
       - name: Upload FFmpeg archive
         uses: actions/upload-artifact@v4
         with:
           name: ffmpeg-archive-${{ matrix.os }}
-          path: ffmpeg-${{ needs.check.outputs.git-sha-short }}-${{ needs.check.outputs.helper-git-sha-short }}-${{ matrix.os }}-nonfree.7z
-          retention-days: ${{ inputs.no_release && '0' || '1' }}
-          compression-level: 0
-          
+          path: ffmpeg-${{ needs.check.outputs.git-sha-short }}-${{ matrix.os }}.7z
+
   release:
-    needs: [check, build, archive]
-    if: '! inputs.no_release'
+    needs: archive
+    if: "! inputs.no_release"
     runs-on: ubuntu-latest
     steps:
       - name: Download FFmpeg archives
         uses: actions/download-artifact@v4
         with:
-          pattern: ffmpeg-archive-*
-          merge-multiple: true
-          
-      - name: Release FFmpeg archives
+          name: ffmpeg-archive-${{ matrix.os }}
+
+      - name: Create GitHub release
         run: |
-          gh release create "${{ needs.build.outputs.date-time-after-tag }}-${{ needs.check.outputs.git-sha-short }}-${{ needs.check.outputs.helper-git-sha-short }}" \
-          ffmpeg-${{ needs.check.outputs.git-sha-short }}-${{ needs.check.outputs.helper-git-sha-short }}-{win64,win32}-nonfree.7z \
-          -n "FFmpeg nonfree git-${{ needs.check.outputs.git-sha }} in ${{ needs.build.outputs.git-date }} built on ${{ needs.build.outputs.date-time-after }} started at ${{ needs.build.outputs.date-time-before }}
-          Using ${{ needs.check.outputs.helper-git-owner }}/ffmpeg-windows-build-helpers git-${{ needs.check.outputs.helper-git-sha }}" \
-          -t "${{ needs.build.outputs.date-time-after }} ${{ needs.check.outputs.git-sha-short }}"
+          gh release create \
+          "${{ needs.build.outputs.date-time-after-tag }}-${{ needs.check.outputs.git-sha-short }}" \
+          ffmpeg-${{ needs.check.outputs.git-sha-short }}-${{ matrix.os }}.7z \
+          -t "${{ needs.build.outputs.date-time-after }}" \
+          -n "FFmpeg built on ${{ needs.build.outputs.date-time-after }}."
         env:
-          GITHUB_TOKEN: ${{ github.token }}
-          GH_TOKEN: ${{ secrets.TOKEN_REPO }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
