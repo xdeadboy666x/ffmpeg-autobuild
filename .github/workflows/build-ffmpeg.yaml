@@ -93,7 +93,10 @@ jobs:
           ref: ${{ needs.check.outputs.git-sha }}
           persist-credentials: false
           path: ffmpeg-source
-          
+
+      - name: Install pip dependencies
+        run: sudo -H pip3 -qq install setuptools meson ninja wheel
+        
       - name: Install APT dependencies
         uses: awalsh128/cache-apt-pkgs-action@v1
         with:
