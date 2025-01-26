@@ -7,23 +7,17 @@ on:
       force_build:
         description: Disable checking for newer commit
         type: boolean
-        default: false
       no_release:
         description: Don't create release
         type: boolean
-        default: false
       use_own_fork:
         description: Use own ffmpeg-windows-build-helpers fork
         type: boolean
-        default: false
   watch:
     types: [started]
 
 concurrency:
   group: ${{ github.workflow }}
-
-env:
-  GH_TOKEN: ${{ secrets.TOKEN_REPO }}
 
 jobs:
   check:
@@ -35,38 +29,42 @@ jobs:
           git_sha=$(gh api repos/FFmpeg/FFmpeg/commits/master -q .sha)
           echo git-sha=$git_sha >> $GITHUB_OUTPUT
           echo git-sha-short=${git_sha::7} >> $GITHUB_OUTPUT
-      - name: Get ffmpeg-windows-build-helpers latest commit
+        env:
+          GH_TOKEN: ${{  secrets.TOKEN_REPO  }}
+         
+      - name: Get ${{ inputs.use_own_fork && github.repository_owner || 'xdeadboy666x' }}/ffmpeg-windows-build-helpers latest commit
         id: ffmpeg-helper-info
         run: |
-          git_owner=$([[ "${{ inputs.use_own_fork }}" == "true" ]] && echo "${{ github.repository_owner }}" || echo "xdeadboy666x")
+          git_owner=${{ inputs.use_own_fork && github.repository_owner || 'xdeadboy666x' }}
           git_sha=$(gh api repos/$git_owner/ffmpeg-windows-build-helpers/commits/master -q .sha)
           echo git-owner=$git_owner >> $GITHUB_OUTPUT
           echo git-sha=$git_sha >> $GITHUB_OUTPUT
           echo git-sha-short=${git_sha::7} >> $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ secrets.TOKEN_REPO }}
+          
       - name: Get ffmpeg-autobuild latest build
         id: ffmpeg-autobuild-info
         run: |
-          tag_name=$(gh api repos/$GITHUB_REPOSITORY/releases/latest -q .tag_name || echo "none")
-          if [ "$tag_name" != "none" ]; then
-            echo git-sha=${tag_name:17:7} >> $GITHUB_OUTPUT
-            echo helper-git-sha=${tag_name:25:7} >> $GITHUB_OUTPUT
-          else
-            echo "No releases found"
-            echo git-sha="none" >> $GITHUB_OUTPUT
-            echo helper-git-sha="none" >> $GITHUB_OUTPUT
-          fi
-      - name: Check for newer commits
-        if: ${{ !inputs.force_build }}
-        run: |
-          [ "${{ steps.ffmpeg-info.outputs.git-sha-short }}" != "${{ steps.ffmpeg-autobuild-info.outputs.git-sha }}" ] ||
-          [ "${{ steps.ffmpeg-helper-info.outputs.git-sha-short }}" != "${{ steps.ffmpeg-autobuild-info.outputs.helper-git-sha }}" ]
+          tag_name=$(gh api repos/$GITHUB_REPOSITORY/releases/latest -q .tag_name)
+          echo git-sha=${tag_name:17:7} >> $GITHUB_OUTPUT
+          echo helper-git-sha=${tag_name:25:7} >> $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ secrets.TOKEN_REPO }}
+          
+      - name: Check if there is newer commit
+        if: '! inputs.force_build'
+        run: >
+          [[ "${{ steps.ffmpeg-info.outputs.git-sha-short }}" != "${{ steps.ffmpeg-autobuild-info.outputs.git-sha }}" ]] ||
+          [[ "${{ steps.ffmpeg-helper-info.outputs.git-sha-short }}" != "${{ steps.ffmpeg-autobuild-info.outputs.helper-git-sha }}" ]]
+          
     outputs:
       git-sha: ${{ steps.ffmpeg-info.outputs.git-sha }}
       git-sha-short: ${{ steps.ffmpeg-info.outputs.git-sha-short }}
       helper-git-owner: ${{ steps.ffmpeg-helper-info.outputs.git-owner }}
       helper-git-sha: ${{ steps.ffmpeg-helper-info.outputs.git-sha }}
       helper-git-sha-short: ${{ steps.ffmpeg-helper-info.outputs.git-sha-short }}
-
+      
   build:
     needs: check
     runs-on: ubuntu-latest
@@ -75,7 +73,7 @@ jobs:
         os: [win64]
 
     steps:
-      - name: Checkout ffmpeg-windows-build-helpers
+      - name: Checkout ${{ needs.check.outputs.helper-git-owner }}/ffmpeg-windows-build-helpers
         uses: actions/checkout@v4
         with:
           repository: ${{ needs.check.outputs.helper-git-owner }}/ffmpeg-windows-build-helpers
@@ -90,43 +88,47 @@ jobs:
           persist-credentials: false
           path: ffmpeg-source
 
+      - name: Install APT dependencies
+        uses: awalsh128/cache-apt-pkgs-action@v1
+        with:
+          packages: ragel cvs yasm pax nasm gperf autogen autoconf-archive
+          
       - name: Install pip dependencies
-        run: |
-          sudo -H pip3 install -qq setuptools meson ninja
-
-      - name: Get FFmpeg git date
+        run: sudo -H pip3 -qq setuptools install meson ninja      
+      
+      - name: Get current FFmpeg git date
         id: git-date
         working-directory: ffmpeg-source
         run: echo git-date=$(git log -1 --format=%ci) >> $GITHUB_OUTPUT
-
-      - name: Compile FFmpeg
+        
+      - name: Get current date & time before build
+        id: date-time-before
+        run: echo date-time=$(date +'%Y-%m-%d %H:%M') >> $GITHUB_OUTPUT
+        
+      - name: Cache FFmpeg build directory
+        uses: actions/cache@v4
+        with:
+          path: ./build
+          key: build-cache-${{ matrix.os }}-${{ needs.check.outputs.git-sha }}
+          restore-keys: build-cache-${{ matrix.os }}-
+          
+      - name: Compile FFmpeg ${{ needs.check.outputs.git-sha-short }} using ffmpeg-windows-build-helpers ${{ needs.check.outputs.helper-git-sha-short }}
         run: |
           sudo apt-get update
           sudo apt-get install -y subversion ragel curl texinfo g++ ed libva-dev bison flex cvs yasm automake libtool autoconf gcc cmake git make pkg-config zlib1g-dev unzip pax nasm gperf autogen bzip2 autoconf-archive p7zip-full clang build-essential git-core libass-dev libfreetype6-dev libgnutls28-dev libmp3lame-dev libsdl2-dev libva-dev libvdpau-dev libvorbis-dev libxcb1-dev libxcb-shm0-dev libxcb-xfixes0-dev python-is-python3 meson autotools-dev gettext patch wget
           ./cross_compile_ffmpeg.sh \
+          --ffmpeg-source-dir=$GITHUB_WORKSPACE/ffmpeg-source \
           --gcc-cpu-count=$(nproc) \
           --disable-nonfree=n \
           --sandbox-ok=y \
           --compiler-flavors=win64
           
-      - name: Cache build directory
-        uses: actions/cache@v3
-        with:
-          path: |
-            ${{ runner.workspace }}/ffmpeg-${{ needs.check.outputs.git-sha-short }}-${{ needs.check.outputs.helper-git-sha-short }}-${{ matrix.os }}-
-          key: ffmpeg-${{ needs.check.outputs.git-sha }}
-          restore-keys: |
-            ffmpeg-${{ needs.check.outputs.git-sha }}
-
-      - name: Cache build directory
-        uses: actions/cache@v3
-        with:
-          path: |
-            ffmpeg-${{ needs.check.outputs.git-sha-short }}-${{ needs.check.outputs.helper-git-sha-short }}-${{ matrix.os }}-
-          key: ffmpeg-${{ needs.check.outputs.git-sha }}
-          restore-keys: |
-            ${{ steps.ffmpeg-info.outputs.git-sha }}
-
+      - name: Get current date & time after build
+        id: date-time-after
+        run: |
+          echo date-time=$(date +'%Y-%m-%d %H:%M') >> $GITHUB_OUTPUT
+          echo date-time-tag=$(date +'%Y-%m-%d-%H-%M') >> $GITHUB_OUTPUT
+          
       - name: Upload FFmpeg binaries
         uses: actions/upload-artifact@v4
         with:
