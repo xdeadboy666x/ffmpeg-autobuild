@@ -108,6 +108,15 @@ jobs:
           --disable-nonfree=n \
           --sandbox-ok=y \
           --compiler-flavors=win64
+          
+      - name: Cache build directory
+        uses: actions/cache@v3
+        with:
+          path: |
+            ${{ runner.workspace }}/ffmpeg-${{ needs.check.outputs.git-sha-short }}-${{ needs.check.outputs.helper-git-sha-short }}-${{ matrix.os }}-
+          key: ffmpeg-${{ needs.check.outputs.git-sha }}
+          restore-keys: |
+            ffmpeg-${{ needs.check.outputs.git-sha }}
 
       - name: Cache build directory
         uses: actions/cache@v3
