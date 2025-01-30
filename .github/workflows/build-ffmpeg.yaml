@@ -66,7 +66,7 @@ jobs:
       helper-git-sha-short: ${{ steps.ffmpeg-helper-info.outputs.git-sha-short }}
   build:
     needs: check
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
         os:
