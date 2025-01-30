@@ -5,21 +5,19 @@ on:
   workflow_dispatch:
     inputs:
       force_build:
-        description: 
-      "isable checking for newer commit
+        description: "Disable checking for newer commit"
         type: boolean
       no_release:
         description: "Don't create release"
         type: boolean
       use_own_fork:
-        description: Use own ffmpeg-windows-build-helpers fork
+        description: "Use own ffmpeg-windows-build-helpers fork"
         type: boolean
   watch:
-    types: [started]
-    
+    types:
+      - started
 concurrency:
   group: ${{ github.workflow }}
-  
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -32,10 +30,9 @@ jobs:
           echo git-sha-short=${git_sha::7} >> $GITHUB_OUTPUT
         env:
           GH_TOKEN: ${{ secrets.TOKEN_REPO }}
-          
       - name: Get ${{ inputs.use_own_fork && github.repository_owner || 'xdeadboy666x' }}/ffmpeg-windows-build-helpers latest commit
         id: ffmpeg-helper-info
-        run: |
+        run: >
           git_owner=${{ inputs.use_own_fork && github.repository_owner || 'xdeadboy666x' }}
           git_sha=$(gh api repos/$git_owner/ffmpeg-windows-build-helpers/commits/master -q .sha)
           echo git-owner=$git_owner >> $GITHUB_OUTPUT
@@ -43,10 +40,9 @@ jobs:
           echo git-sha-short=${git_sha::7} >> $GITHUB_OUTPUT
         env:
           GH_TOKEN: ${{ secrets.TOKEN_REPO }}
-          
       - name: Get ffmpeg-autobuild latest build
         id: ffmpeg-autobuild-info
-        run: |
+        run: >
           tag_name=$(gh api repos/$GITHUB_REPOSITORY/releases/latest -q .tag_name || echo "none")
           if [ "$tag_name" != "none" ]; then
             echo git-sha=${tag_name:17:7} >> $GITHUB_OUTPUT
@@ -58,27 +54,24 @@ jobs:
           fi
         env:
           GH_TOKEN: ${{ secrets.TOKEN_REPO }}
-          
       - name: Check if there is newer commit
-        if: '! inputs.force_build'
+        if: "! inputs.force_build"
         run: >
-          [[ "${{ steps.ffmpeg-info.outputs.git-sha-short }}" != "${{ steps.ffmpeg-autobuild-info.outputs.git-sha }}" ]] ||
-          [[ "${{ steps.ffmpeg-helper-info.outputs.git-sha-short }}" != "${{ steps.ffmpeg-autobuild-info.outputs.helper-git-sha }}" ]]
-          
+          [[ "${{ steps.ffmpeg-info.outputs.git-sha-short }}" != "${{ steps.ffmpeg-autobuild-info.outputs.git-sha }}" ]] || [[ "${{ steps.ffmpeg-helper-info.outputs.git-sha-short }}" != "${{ steps.ffmpeg-autobuild-info.outputs.helper-git-sha }}" ]]
     outputs:
       git-sha: ${{ steps.ffmpeg-info.outputs.git-sha }}
       git-sha-short: ${{ steps.ffmpeg-info.outputs.git-sha-short }}
       helper-git-owner: ${{ steps.ffmpeg-helper-info.outputs.git-owner }}
       helper-git-sha: ${{ steps.ffmpeg-helper-info.outputs.git-sha }}
       helper-git-sha-short: ${{ steps.ffmpeg-helper-info.outputs.git-sha-short }}
-      
   build:
     needs: check
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        os: [win64, win32]
-        
+        os:
+          - win64
+          - win32
     steps:
       - name: Checkout ${{ needs.check.outputs.helper-git-owner }}/ffmpeg-windows-build-helpers
         uses: actions/checkout@v4
@@ -86,7 +79,6 @@ jobs:
           repository: ${{ needs.check.outputs.helper-git-owner }}/ffmpeg-windows-build-helpers
           ref: ${{ needs.check.outputs.helper-git-sha }}
           persist-credentials: false
-          
       - name: Checkout FFmpeg
         uses: actions/checkout@v4
         with:
@@ -94,36 +86,29 @@ jobs:
           ref: ${{ needs.check.outputs.git-sha }}
           persist-credentials: false
           path: ffmpeg-source
-          
       - name: pkgs
-        run: sudo apt-get install -y subversion ragel curl texinfo g++ ed libva-dev bison flex cvs yasm automake libtool autoconf gcc cmake git make pkg-config zlib1g-dev unzip pax nasm gperf autogen bzip2 autoconf-archive
-      
+        run: >
+          sudo apt-get install -y subversion ragel curl texinfo g++ ed libva-dev bison flex cvs yasm automake libtool autoconf gcc cmake git make pkg-config zlib1g-dev unzip pax nasm gperf autogen bzip2 autoconf-archive
       - name: Install APT dependencies
         uses: awalsh128/cache-apt-pkgs-action@v1
         with:
           packages: subversion ragel cvs yasm pax nasm gperf autogen autoconf-archive
-                
       - name: Install pip dependencies
         run: sudo -H pip3 -qq install setuptools meson ninja
-        
       - name: Get current FFmpeg git date
         id: git-date
         working-directory: ffmpeg-source
         run: echo git-date=$(git log -1 --format=%ci) >> $GITHUB_OUTPUT
-        
       - name: Get current date & time before build
         id: date-time-before
         run: echo date-time=$(date +'%Y-%m-%d %H:%M') >> $GITHUB_OUTPUT
-        
       - name: Compile FFmpeg ${{ needs.check.outputs.git-sha-short }} using ffmpeg-windows-build-helpers ${{ needs.check.outputs.helper-git-sha-short }}
         run: ./cross_compile_ffmpeg.sh --ffmpeg-source-dir=$GITHUB_WORKSPACE/ffmpeg-source --gcc-cpu-count=$(nproc) --disable-nonfree=n --sandbox-ok=y --compiler-flavors=${{ matrix.os }}
-        
       - name: Get current date & time after build
         id: date-time-after
         run: |
           echo date-time=$(date +'%Y-%m-%d %H:%M') >> $GITHUB_OUTPUT
           echo date-time-tag=$(date +'%Y-%m-%d-%H-%M') >> $GITHUB_OUTPUT
-          
       - name: Upload FFmpeg binaries
         uses: actions/upload-artifact@v4
         with:
@@ -134,49 +119,45 @@ jobs:
             ffmpeg-source/ffplay.exe
           if-no-files-found: error
           retention-days: ${{ inputs.no_release && '0' || '1' }}
-          
     outputs:
       date-time-before: ${{ steps.date-time-before.outputs.date-time }}
       date-time-after: ${{ steps.date-time-after.outputs.date-time }}
       date-time-after-tag: ${{ steps.date-time-after.outputs.date-time-tag }}
       git-date: ${{ steps.git-date.outputs.git-date }}
-      
   archive:
     permissions:
       id-token: write
       attestations: write
-    needs: [check, build]
+    needs:
+      - check
+      - build
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        os: [win64, win32]
-        
+        os:
+          - win64
+          - win32
     steps:
       - name: Download FFmpeg binaries
         uses: actions/download-artifact@v4
         with:
           name: ffmpeg-${{ matrix.os }}
-          
       - name: Create LICENSE
-        run: |
+        run: >
           echo "This version of ffmpeg has nonfree parts compiled in." >> LICENSE
           echo "Therefore it is not legally redistributable." >> LICENSE
-          
       - name: Generate artifact attestation for FFmpeg binaries
-        if: '! inputs.no_release'
+        if: "! inputs.no_release"
         uses: actions/attest-build-provenance@v2
         with:
           subject-path: ff*.exe
-          
       - name: 7-Zip FFmpeg binaries
         run: 7z a -mx9 ffmpeg-${{ needs.check.outputs.git-sha-short }}-${{ needs.check.outputs.helper-git-sha-short }}-${{ matrix.os }}-nonfree.7z ff{mpeg,probe,play}.exe LICENSE
-        
       - name: Generate artifact attestation for FFmpeg archive
-        if: '! inputs.no_release'
+        if: "! inputs.no_release"
         uses: actions/attest-build-provenance@v2
         with:
           subject-path: ffmpeg-${{ needs.check.outputs.git-sha-short }}-${{ needs.check.outputs.helper-git-sha-short }}-${{ matrix.os }}-nonfree.7z
-          
       - name: Upload FFmpeg archive
         uses: actions/upload-artifact@v4
         with:
@@ -184,10 +165,12 @@ jobs:
           path: ffmpeg-${{ needs.check.outputs.git-sha-short }}-${{ needs.check.outputs.helper-git-sha-short }}-${{ matrix.os }}-nonfree.7z
           retention-days: ${{ inputs.no_release && '0' || '1' }}
           compression-level: 0
-          
   release:
-    needs: [check, build, archive]
-    if: '! inputs.no_release'
+    needs:
+      - check
+      - build
+      - archive
+    if: "! inputs.no_release"
     runs-on: ubuntu-latest
     steps:
       - name: Download FFmpeg archives
@@ -195,9 +178,8 @@ jobs:
         with:
           pattern: ffmpeg-archive-*
           merge-multiple: true
-          
       - name: Release FFmpeg archives
-        run: |
+        run: >
           gh release create "${{ needs.build.outputs.date-time-after-tag }}-${{ needs.check.outputs.git-sha-short }}-${{ needs.check.outputs.helper-git-sha-short }}" \
           ffmpeg-${{ needs.check.outputs.git-sha-short }}-${{ needs.check.outputs.helper-git-sha-short }}-{win64,win32}-nonfree.7z \
           -n "FFmpeg nonfree git-${{ needs.check.outputs.git-sha }} in ${{ needs.build.outputs.git-date }} built on ${{ needs.build.outputs.date-time-after }} started at ${{ needs.build.outputs.date-time-before }}. Using ${{ needs.check.outputs.helper-git-owner }}/ffmpeg-windows-build-helpers git-${{ needs.check.outputs.helper-git-sha }}" \
