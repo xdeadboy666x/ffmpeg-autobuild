@@ -236,23 +236,23 @@ jobs:
           compression-level: 0
           
   release:
-  needs: [check, build, archive]
-  if: '! inputs.no_release'
-  runs-on: ubuntu-latest
-  steps:
-    - name: Download FFmpeg archives
-      uses: actions/download-artifact@v4
-      with:
-        pattern: ffmpeg-archive-*
-        merge-multiple: true
+    needs: [check, build, archive]
+    if: '! inputs.no_release'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download FFmpeg archives
+        uses: actions/download-artifact@v4
+        with:
+          pattern: ffmpeg-archive-*
+          merge-multiple: true
     
-    - name: Release FFmpeg archives
-      run: |
-        gh release create "${{ needs.build.outputs.date-time-after-tag }}-${{ needs.check.outputs.git-sha-short }}-${{ needs.check.outputs.helper-git-sha-short }}" \
-          ffmpeg-${{ needs.check.outputs.git-sha-short }}-${{ needs.check.outputs.helper-git-sha-short }}-win64-nonfree.7z \
-          -n "FFmpeg nonfree git-${{ needs.check.outputs.git-sha }} in ${{ needs.build.outputs.git-date }} built on ${{ needs.build.outputs.date-time-after }} started at ${{ needs.build.outputs.date-time-before }}. Using ${{ needs.check.outputs.helper-git-owner }}/ffmpeg-windows-build-helpers git-${{ needs.check.outputs.helper-git-sha }}" \
+      - name: Release FFmpeg archives
+        run: |
+          gh release create "${{ needs.build.outputs.date-time-after-tag }}-${{ needs.check.outputs.git-sha-short }}-${{ needs.check.outputs.helper-git-sha-short }}" \
+            ffmpeg-${{ needs.check.outputs.git-sha-short }}-${{ needs.check.outputs.helper-git-sha-short }}-win64-nonfree.7z \
+            -n "FFmpeg nonfree git-${{ needs.check.outputs.git-sha }} in ${{ needs.build.outputs.git-date }} built on ${{ needs.build.outputs.date-time-after }} started at ${{ needs.build.outputs.date-time-before }}. Using ${{ needs.check.outputs.helper-git-owner }}/ffmpeg-windows-build-helpers git-${{ needs.check.outputs.helper-git-sha }}" \
           -t "${{ needs.build.outputs.date-time-after }} ${{ needs.check.outputs.git-sha-short }}"
-      env:
-        GH_TOKEN: ${{ secrets.TOKEN_REPO }}
-        GH_REPO: ${{ github.repository
+        env:
+          GH_TOKEN: ${{ secrets.TOKEN_REPO }}
+          GH_REPO: ${{ github.repository
     
