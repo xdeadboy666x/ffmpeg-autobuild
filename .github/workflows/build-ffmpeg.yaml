@@ -5,10 +5,11 @@ on:
   workflow_dispatch:
     inputs:
       force_build:
-        description: Disable checking for newer commit
+        description: 
+      "isable checking for newer commit
         type: boolean
       no_release:
-        description: Don't create release
+        description: "Don't create release"
         type: boolean
       use_own_fork:
         description: Use own ffmpeg-windows-build-helpers fork
