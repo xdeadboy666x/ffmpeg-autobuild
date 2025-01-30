@@ -51,7 +51,7 @@ jobs:
            echo "No releases found"
            echo git-sha="none" >> $GITHUB_OUTPUT
            echo helper-git-sha="none" >> $GITHUB_OUTPUT
-        fi        
+         fi        
         env:
           GH_TOKEN: ${{ secrets.TOKEN_REPO }}
       - name: Check if there is newer commit
