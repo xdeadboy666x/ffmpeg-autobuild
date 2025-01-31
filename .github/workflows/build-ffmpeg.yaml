@@ -4,7 +4,7 @@ on:
   schedule:
     - cron: "0 0 */3 * *"
   push:
-    branches: [ master ]
+    branches: "master"
     inputs:
       force_build:
         description: Disable checking for newer commit
