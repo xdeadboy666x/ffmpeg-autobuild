@@ -236,10 +236,7 @@ jobs:
           compression-level: 0
           
   release:
-   needs:
-      - check
-      - build
-      - archive
+    needs: [check, build, archive]
     if: "! inputs.no_release"
     runs-on: ubuntu-latest
     steps:
