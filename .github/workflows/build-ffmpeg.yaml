@@ -1,10 +1,10 @@
 name: Build FFmpeg x64 and x86-x64 for Windows
 on:
+  workflow_dispatch:
   schedule:
     - cron: "0 0 */3 * *"
   push:
     branches: [ master ]
-  workflow_dispatch:
     inputs:
       force_build:
         description: Disable checking for newer commit
@@ -16,7 +16,7 @@ on:
         description: Use own ffmpeg-windows-build-helpers fork
         type: boolean
   watch:
-    types: [started]
+    types: [ started ]
     
 concurrency:
   group: ${{ github.workflow }}
