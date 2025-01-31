@@ -1,0 +1,9 @@
+subversion
+ragel
+cvs
+yasm
+pax
+nasm
+gperf
+autogen
+autoconf-archive
