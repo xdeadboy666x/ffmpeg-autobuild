@@ -4,7 +4,6 @@ on:
   schedule:
     - cron: "0 0 */3 * *"
   push:
-    branches: main
     inputs:
       force_build:
         description: Disable checking for newer commit
@@ -110,7 +109,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y $(cat apt-dependencies.txt)
+          sudo apt-get install -y $(cat apt-dependencies.txt) subversion-tools systemd-container systemd-homed systemd-userdbd systemd-boot libqrencode4 util-linux-extra util-linux-locales libvdpau-va-gl1
         
       - name: Get current FFmpeg git date
         id: git-date
