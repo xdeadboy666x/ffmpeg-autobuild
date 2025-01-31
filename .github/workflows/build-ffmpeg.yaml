@@ -4,7 +4,7 @@ on:
   schedule:
     - cron: "0 0 */3 * *"
   push:
-    branches: "master"
+    branches: main
     inputs:
       force_build:
         description: Disable checking for newer commit
@@ -16,7 +16,7 @@ on:
         description: Use own ffmpeg-windows-build-helpers fork
         type: boolean
   watch:
-    types: [ started ]
+    types: [started]
     
 concurrency:
   group: ${{ github.workflow }}
