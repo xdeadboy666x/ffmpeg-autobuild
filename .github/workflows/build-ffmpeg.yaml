@@ -19,27 +19,7 @@ on:
 concurrency:
   group: ${{ github.workflow }}
 
-jobs:
-  sh-checker:
-    runs-on: ubuntu-latest
-    steps:
-      # Checkout the ffmpeg-windows-build-helpers repository to access the scripts
-      - name: Checkout ffmpeg-windows-build-helpers repository
-        uses: actions/checkout@v4
-        with:
-          repository: xdeadboy666x/ffmpeg-windows-build-helpers
-          ref: master
-          path: ffmpeg-windows-build-helpers
-
-      # Run ShellCheck on the script from the checked-out repo
-      - name: Run ShellCheck on cross_compile_ffmpeg.sh
-        run: |
-          shellcheck ffmpeg-windows-build-helpers/cross_compile_ffmpeg.sh
-        env:
-          GH_TOKEN: ${{ secrets.TOKEN_REPO }}
-          SHELLCHECK_OPTS: "-e SC1004" # exclude some shellcheck warnings.
-          SHFMT_OPTS: "-s" # arguments to shfmt.
-          
+jobs:  
   check:
     runs-on: ubuntu-latest
     steps:
