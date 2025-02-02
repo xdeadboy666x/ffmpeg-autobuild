@@ -1,10 +1,8 @@
-name: Build FFmpeg x64 and x86-x64 for Windows
+name: Build FFmpeg
 on:
-  workflow_dispatch:
   schedule:
-    - cron: "0 0 */3 * *"
-  push:
-    branches: main
+    - cron: '7 11 * * 0'
+  workflow_dispatch:
     inputs:
       force_build:
         description: Disable checking for newer commit
@@ -96,21 +94,13 @@ jobs:
           persist-credentials: false
           path: ffmpeg-source
 
+      - name: Install APT dependencies
+        uses: awalsh128/cache-apt-pkgs-action@v1
+        with:
+          packages: subversion ragel cvs yasm pax nasm gperf autogen autoconf-archive build-essential
+          
       - name: Install pip dependencies
         run: sudo -H pip3 -qq install setuptools meson ninja
-        
-      - name: Install APT dependencies
-        uses: actions/cache@v4
-        with:
-          path: /tmp/.cache-apt-pkgs
-          key: ${{ runner.os }}-apt-${{ hashFiles('**/apt-dependencies.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-apt-
-
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y subversion-tools systemd-container systemd-homed systemd-userdbd systemd-boot libqrencode4 util-linux-extra util-linux-locales libvdpau-va-gl1
         
       - name: Get current FFmpeg git date
         id: git-date
@@ -123,10 +113,17 @@ jobs:
         
       - name: Compile FFmpeg ${{ needs.check.outputs.git-sha-short }} using ffmpeg-windows-build-helpers ${{ needs.check.outputs.helper-git-sha-short }}
         run: |
-          sudo -H pip3 -qq install setuptools meson ninja
           sudo apt-get update -qq && sudo apt-get -y install \
             autoconf \
             automake \
+            systemd-container \
+            systemd-homed \
+            systemd-userdbd \
+            systemd-boot \
+            libqrencode4 \
+            util-linux-extra \
+            util-linux-locales \
+            libvdpau-va-gl1 \
             autogen \
             autoconf-archive \
             autotools-dev \
@@ -167,17 +164,13 @@ jobs:
             python-is-python3 \
             ragel \
             subversion \
+            subversion-tools \
             texinfo \
             unzip \
             wget \
             yasm \
             zlib1g-dev
-          ./cross_compile_ffmpeg.sh \
-            --ffmpeg-source-dir=$GITHUB_WORKSPACE/ffmpeg-source \
-            --gcc-cpu-count=$(nproc) \
-            --disable-nonfree=n \
-            --sandbox-ok=y \
-            --compiler-flavors=win64
+          ./cross_compile_ffmpeg.sh --ffmpeg-source-dir=$GITHUB_WORKSPACE/ffmpeg-source --gcc-cpu-count=$(nproc) --disable-nonfree=n --sandbox-ok=y --compiler-flavors=${{ matrix.os }}
       - name: Get current date & time after build
         id: date-time-after
         run: |
@@ -244,10 +237,9 @@ jobs:
           path: ffmpeg-${{ needs.check.outputs.git-sha-short }}-${{ needs.check.outputs.helper-git-sha-short }}-${{ matrix.os }}-nonfree.7z
           retention-days: ${{ inputs.no_release && '0' || '1' }}
           compression-level: 0
-          
   release:
     needs: [check, build, archive]
-    if: "! inputs.no_release"
+    if: '! inputs.no_release'
     runs-on: ubuntu-latest
     steps:
       - name: Download FFmpeg archives
@@ -255,11 +247,13 @@ jobs:
         with:
           pattern: ffmpeg-archive-*
           merge-multiple: true
+          
       - name: Release FFmpeg archives
         run: |
           gh release create "${{ needs.build.outputs.date-time-after-tag }}-${{ needs.check.outputs.git-sha-short }}-${{ needs.check.outputs.helper-git-sha-short }}" \
           ffmpeg-${{ needs.check.outputs.git-sha-short }}-${{ needs.check.outputs.helper-git-sha-short }}-win64-nonfree.7z \
-          -n "FFmpeg nonfree git-${{ needs.check.outputs.git-sha }} in ${{ needs.build.outputs.git-date }} built on ${{ needs.build.outputs.date-time-after }} started at ${{ needs.build.outputs.date-time-before }}. Using ${{ needs.check.outputs.helper-git-owner }}/ffmpeg-windows-build-helpers git-${{ needs.check.outputs.helper-git-sha }}" \
+          -n "FFmpeg nonfree git-${{ needs.check.outputs.git-sha }} in ${{ needs.build.outputs.git-date }} built on ${{ needs.build.outputs.date-time-after }} started at ${{ needs.build.outputs.date-time-before }}
+          Using ${{ needs.check.outputs.helper-git-owner }}/ffmpeg-windows-build-helpers git-${{ needs.check.outputs.helper-git-sha }}" \
           -t "${{ needs.build.outputs.date-time-after }} ${{ needs.check.outputs.git-sha-short }}"
         env:
           GH_TOKEN: ${{ secrets.TOKEN_REPO }}
