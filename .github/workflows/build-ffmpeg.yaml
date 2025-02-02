@@ -23,7 +23,7 @@ jobs:
   sh-checker:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: xdeadboy666x/ffmpeg-windows-build-helpers
       - name: Run the sh-checker
         uses: luizm/action-sh-checker@master
         env:
