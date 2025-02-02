@@ -15,10 +15,10 @@ on:
         type: boolean
   watch:
     types: [started]
-    
+
 concurrency:
   group: ${{ github.workflow }}
-  
+
 jobs:
   sh-checker:
     runs-on: ubuntu-latest
@@ -37,22 +37,8 @@ jobs:
           shellcheck ffmpeg-windows-build-helpers/cross_compile_ffmpeg.sh
         env:
           GH_TOKEN: ${{ secrets.TOKEN_REPO }}
-          SHELLCHECK_OPTS: -e SC1004 # exclude some shellcheck warnings.
-          SHFMT_OPTS: -s # arguments to shfmt.
-        with:
-          sh_checker_comment: true
-          sh_checker_exclude: ".terraform ^dir/example.sh"
-          
-      # Run the existing sh-checker
-      - name: Run the sh-checker
-        uses: luizm/action-sh-checker@master
-        env:
-          GH_TOKEN: ${{ secrets.TOKEN_REPO }}
-          SHELLCHECK_OPTS: -e SC1004 # exclude some shellcheck warnings.
-          SHFMT_OPTS: -s # arguments to shfmt.
-        with:
-          sh_checker_comment: true
-          sh_checker_exclude: ".terraform ^dir/example.sh"
+          SHELLCHECK_OPTS: "-e SC1004" # exclude some shellcheck warnings.
+          SHFMT_OPTS: "-s" # arguments to shfmt.
           
   check:
     runs-on: ubuntu-latest
