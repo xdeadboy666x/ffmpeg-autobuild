@@ -100,7 +100,7 @@ jobs:
         run: sudo -H pip3 -qq install setuptools meson ninja
         
       - name: Install APT dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: /tmp/.cache-apt-pkgs
           key: ${{ runner.os }}-apt-${{ hashFiles('**/apt-dependencies.txt') }}
