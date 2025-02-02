@@ -20,6 +20,20 @@ concurrency:
   group: ${{ github.workflow }}
   
 jobs:
+  sh-checker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run the sh-checker
+        uses: luizm/action-sh-checker@master
+        env:
+          GH_TOKEN: ${{ secrets.TOKEN_REPO }}
+          SHELLCHECK_OPTS: -e SC1004 # exclude some shellcheck warnings.
+          SHFMT_OPTS: -s # arguments to shfmt.
+        with:
+          sh_checker_comment: true
+          sh_checker_exclude: ".terraform ^dir/example.sh"
+          
   check:
     runs-on: ubuntu-latest
     steps:
