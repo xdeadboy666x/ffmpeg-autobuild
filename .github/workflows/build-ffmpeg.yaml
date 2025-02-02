@@ -15,11 +15,11 @@ on:
         type: boolean
   watch:
     types: [started]
-
+    
 concurrency:
   group: ${{ github.workflow }}
-
-jobs:  
+  
+jobs:
   check:
     runs-on: ubuntu-latest
     steps:
@@ -46,15 +46,9 @@ jobs:
       - name: Get ffmpeg-autobuild latest build
         id: ffmpeg-autobuild-info
         run: |
-          tag_name=$(gh api repos/$GITHUB_REPOSITORY/releases/latest -q .tag_name || echo "none")
-          if [ "$tag_name" != "none" ]; then
-            echo git-sha=${tag_name:17:7} >> $GITHUB_OUTPUT
-            echo helper-git-sha=${tag_name:25:7} >> $GITHUB_OUTPUT
-          else
-            echo "No releases found"
-            echo git-sha="none" >> $GITHUB_OUTPUT
-            echo helper-git-sha="none" >> $GITHUB_OUTPUT
-          fi
+          tag_name=$(gh api repos/$GITHUB_REPOSITORY/releases/latest -q .tag_name)
+          echo git-sha=${tag_name:17:7} >> $GITHUB_OUTPUT
+          echo helper-git-sha=${tag_name:25:7} >> $GITHUB_OUTPUT
         env:
           GH_TOKEN: ${{ secrets.TOKEN_REPO }}
           
@@ -114,31 +108,17 @@ jobs:
       - name: Compile FFmpeg ${{ needs.check.outputs.git-sha-short }} using ffmpeg-windows-build-helpers ${{ needs.check.outputs.helper-git-sha-short }}
         run: |
           sudo apt-get update -qq && sudo apt-get -y install \
-            systemd-container \
-            systemd-homed \
-            systemd-userdbd \
-            systemd-boot \
-            libqrencode4 \
-            util-linux-extra \
-            util-linux-locales \
-            libvdpau-va-gl1 \
-            autogen \
-            autoconf-archive \
-            autotools-dev \
+            autoconf \
+            automake \
             build-essential \
-            clang \
             cmake \
-            cvs \
-            ed \
-            gettext \
             git \
-            git-core \
-            gperf \
             libass-dev \
-            libfreetype6-dev \
+            libfreetype-dev \
             libgnutls28-dev \
             libmp3lame-dev \
             libsdl2-dev \
+            libtool \
             libva-dev \
             libvdpau-dev \
             libvorbis-dev \
@@ -146,15 +126,49 @@ jobs:
             libxcb-shm0-dev \
             libxcb-xfixes0-dev \
             meson \
-            nasm \
             ninja-build \
-            patch \
-            pax \
-            ragel \
-            subversion \
-            subversion-tools \
+            pkg-config \
+            texinfo \
+            wget \
             yasm \
+            zlib1g-dev 
+          sudo apt-get install nasm 
+          sudo apt install openssl libssl-dev
+          sudo apt install \
+          frei0r-plugins-dev \
+          libchromaprint-dev \
+          libgme-dev \
+          flite1-dev \
+          libcaca-dev \
+          libbs2b-dev \
+          libopenjp2-7-dev \
+          libopencore-amrnb-dev \
+          librubberband-dev \
+          libopenmpt-dev \
+          libshine-dev \
+          libsnappy-dev \
+          libsoxr-dev \
+          libspeex-dev \
+          libtheora-dev \
+          libtwolame-dev \
+          libv4l-dev \
+          libvidstab-dev \
+          libvo-amrwbenc-dev \
+          libxvidcore-dev \
+          libqrencode4 \
+          liblzma-dev \
+          libbluray-dev \
+          libcdparanoia-dev \
+          libcdio-dev \
+          libcdio-paranoia-dev \
+          ladspa-sdk \
+          libgsm1-dev \
+          libvpl2 \
+          libwebp-dev \
+          libzimg-dev \
+          libzvbi-dev
           ./cross_compile_ffmpeg.sh --ffmpeg-source-dir=$GITHUB_WORKSPACE/ffmpeg-source --gcc-cpu-count=$(nproc) --build-intel-qsv=y --build-amd-amf=y --disable-nonfree=n --sandbox-ok=y --compiler-flavors=${{ matrix.os }}
+          
       - name: Get current date & time after build
         id: date-time-after
         run: |
