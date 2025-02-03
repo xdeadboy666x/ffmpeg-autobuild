@@ -1,4 +1,4 @@
-name: Build FFmpeg
+ename: Build FFmpeg
 on:
   schedule:
     - cron: '7 11 * * 0'
@@ -161,7 +161,7 @@ jobs:
           libwebp-dev \
           libzimg-dev \
           libzvbi-dev
-          ./cross_compile_ffmpeg.sh --ffmpeg-source-dir=$GITHUB_WORKSPACE/ffmpeg-source --gcc-cpu-count=$(nproc) --build-intel-qsv=y --build-amd-amf=y --disable-nonfree=n --sandbox-ok=y --compiler-flavors=${{ matrix.os }}
+          ./cross_compile_ffmpeg.sh --ffmpeg-source-dir=$GITHUB_WORKSPACE/ffmpeg-source --gcc-cpu-count=$(nproc) --disable-nonfree=n --sandbox-ok=y --compiler-flavors=${{ matrix.os }}
           
       - name: Get current date & time after build
         id: date-time-after
