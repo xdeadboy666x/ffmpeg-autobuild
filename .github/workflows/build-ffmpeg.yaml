@@ -89,7 +89,7 @@ jobs:
           path: ffmpeg-source
 
       - name: Install pip dependencies
-        run: sudo -H pip3 -qq install -r requirements.txt
+        run: sudo -H pip3 -qq install -r https://raw.githubusercontent.com/xdeadboy666x/ffmpeg-autobuild/refs/heads/main/requirements.txt
 
       - name: Install APT dependencies
         uses: awalsh128/cache-apt-pkgs-action@v1
