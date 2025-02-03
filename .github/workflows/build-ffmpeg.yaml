@@ -140,12 +140,12 @@ jobs:
           librubberband-dev \
           libopenmpt-dev \
           libqrencode-dev \
-          libquirc-dev \
           libshine-dev \
           libsnappy-dev \
           libsoxr-dev \
           libspeex-dev \
           libtheora-dev \
+          libpng-dev \
           libtwolame-dev \
           libv4l-dev \
           libvidstab-dev \
