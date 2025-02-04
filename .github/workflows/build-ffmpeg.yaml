@@ -21,15 +21,9 @@ on:
         type: boolean
   watch:
     types: [started]
-    
 concurrency:
   group: ${{ github.workflow }}
   
-jobs:
-  check:
-    runs-on: ubuntu-latest
-    steps:
-
 permissions:
   contents: read
 
