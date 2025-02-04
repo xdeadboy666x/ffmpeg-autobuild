@@ -107,10 +107,10 @@ jobs:
       - name: Get current date & time before build
         id: date-time-before
         run: echo date-time=$(date +'%Y-%m-%d %H:%M') >> $GITHUB_OUTPUT
-        
+      
       - name: Compile FFmpeg ${{ needs.check.outputs.git-sha-short }} using ffmpeg-windows-build-helpers ${{ needs.check.outputs.helper-git-sha-short }}
         run: |
-          sudo -H pip3 install setuptools mesa ninja
+          sudo -H pip3 install setuptools meson ninja
           sudo apt-get update -qq && sudo apt-get -y install subversion ragel cvs yasm pax nasm gperf autogen autoconf-archive \
             autoconf \
             automake \
@@ -134,45 +134,11 @@ jobs:
             pkg-config \
             texinfo \
             wget \
-            zlib1g-dev 
-          sudo apt-get install nasm 
-          sudo apt install openssl libssl-dev
-          sudo apt install \
-          frei0r-plugins-dev \
-          libchromaprint-dev \
-          libgme-dev \
-          flite1-dev \
-          libcaca-dev \
-          libbs2b-dev \
-          libopenjp2-7-dev \
-          libopencore-amrnb-dev \
-          librubberband-dev \
-          libopenmpt-dev \
-          libshine-dev \
-          libsnappy-dev \
-          libsoxr-dev \
-          libspeex-dev \
-          libtheora-dev \
-          libpng-dev \
-          libtwolame-dev \
-          libv4l-dev \
-          libvidstab-dev \
-          libvo-amrwbenc-dev \
-          libxvidcore-dev \
-          libqrencode4 \
-          liblzma-dev \
-          libbluray-dev \
-          libcdparanoia-dev \
-          libcdio-dev \
-          libcdio-paranoia-dev \
-          ladspa-sdk \
-          libgsm1-dev \
-          libvpl2 \
-          libwebp-dev \
-          libzimg-dev \
-          libzvbi-dev
-          bash ./cross_compile_ffmpeg.sh --ffmpeg-source-dir=$GITHUB_WORKSPACE/ffmpeg-source --gcc-cpu-count=$(nproc) --disable-nonfree=n --sandbox-ok=y --compiler-flavors=${{ matrix.os }}
-          
+            zlib1g-dev \
+            yasm \
+            nasm
+         bash ./cross_compile_ffmpeg.sh --ffmpeg-source-dir=$GITHUB_WORKSPACE/ffmpeg-source --gcc-cpu-count=$(nproc) --disable-nonfree=n --sandbox-ok=y --compiler-flavors=${{ matrix.os }}
+
       - name: Get current date & time after build
         id: date-time-after
         run: |
