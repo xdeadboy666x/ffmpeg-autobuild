@@ -1,5 +1,11 @@
 name: Build FFmpeg
 on:
+  push:
+    paths:
+      - .github/**
+  pull_request:
+    paths:
+      - .github/**
   schedule:
     - cron: '7 11 * * 0'
   workflow_dispatch:
@@ -23,6 +29,22 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run ShellCheck
+        uses: saleor/shellcheck-gha@v0
+        # Uncomment to customize the scan directory:
+        # with:
+        #   scan-directory-path: .github/
       - name: Get FFmpeg latest commit
         id: ffmpeg-info
         run: |
