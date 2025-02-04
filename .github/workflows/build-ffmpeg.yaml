@@ -139,7 +139,6 @@ jobs:
           libopencore-amrnb-dev \
           librubberband-dev \
           libopenmpt-dev \
-          libqrencode-dev \
           libshine-dev \
           libsnappy-dev \
           libsoxr-dev \
