@@ -114,7 +114,7 @@ jobs:
       - name: Run ShellCheck
         uses: saleor/shellcheck-gha@v0
         with:
-          scan-directory-path: ./cross_compile_ffmpeg.sh
+          scan-directory-path: "/cross_compile_ffmpeg.sh"
       
       - name: Compile FFmpeg ${{ needs.check.outputs.git-sha-short }} using ffmpeg-windows-build-helpers ${{ needs.check.outputs.helper-git-sha-short }}
         run: |
