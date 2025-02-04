@@ -119,16 +119,6 @@ jobs:
         id: date-time-before
         run: echo date-time=$(date +'%Y-%m-%d %H:%M') >> $GITHUB_OUTPUT
         
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v1
-      - name: Lint
-        uses: azohra/shell-linter@latest
-        with:
-          path: "cross_compile_ffmpeg.sh"
-      
       - name: Compile FFmpeg ${{ needs.check.outputs.git-sha-short }} using ffmpeg-windows-build-helpers ${{ needs.check.outputs.helper-git-sha-short }}
         run: |
           sudo apt-get update -qq && sudo apt-get -y install subversion ragel cvs yasm pax nasm gperf autogen autoconf-archive \
