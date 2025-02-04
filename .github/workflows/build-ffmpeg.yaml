@@ -111,8 +111,13 @@ jobs:
         id: date-time-before
         run: echo date-time=$(date +'%Y-%m-%d %H:%M') >> $GITHUB_OUTPUT
         
-      - name: Run ShellCheck
-        uses: saleor/shellcheck-gha@v0
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v1
+      - name: Lint
+        uses: azohra/shell-linter@latest
         with:
           path: "cross_compile_ffmpeg.sh"
       
