@@ -34,11 +34,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Run ShellCheck
-        uses: saleor/shellcheck-gha@v0
-        # Uncomment to customize the scan directory:
-        # with:
-        #   scan-directory-path: .github/
       - name: Get FFmpeg latest commit
         id: ffmpeg-info
         run: |
@@ -115,7 +110,12 @@ jobs:
       - name: Get current date & time before build
         id: date-time-before
         run: echo date-time=$(date +'%Y-%m-%d %H:%M') >> $GITHUB_OUTPUT
-        
+      - name: Run ShellCheck
+        uses: saleor/shellcheck-gha@v0
+        # Uncomment to customize the scan directory:
+         with:
+           scan-directory-path: ./cross_compile_ffmpeg.sh
+      
       - name: Compile FFmpeg ${{ needs.check.outputs.git-sha-short }} using ffmpeg-windows-build-helpers ${{ needs.check.outputs.helper-git-sha-short }}
         run: |
           sudo apt-get update -qq && sudo apt-get -y install subversion ragel cvs yasm pax nasm gperf autogen autoconf-archive \
