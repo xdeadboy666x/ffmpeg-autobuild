@@ -110,11 +110,11 @@ jobs:
       - name: Get current date & time before build
         id: date-time-before
         run: echo date-time=$(date +'%Y-%m-%d %H:%M') >> $GITHUB_OUTPUT
+        
       - name: Run ShellCheck
         uses: saleor/shellcheck-gha@v0
-        # Uncomment to customize the scan directory:
-         with:
-           scan-directory-path: ./cross_compile_ffmpeg.sh
+        with:
+          scan-directory-path: ./cross_compile_ffmpeg.sh
       
       - name: Compile FFmpeg ${{ needs.check.outputs.git-sha-short }} using ffmpeg-windows-build-helpers ${{ needs.check.outputs.helper-git-sha-short }}
         run: |
