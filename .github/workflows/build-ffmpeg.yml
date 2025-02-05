@@ -3,7 +3,7 @@ on:
   schedule:
     - cron: '7 11 * * 0'
   workflow_dispatch:
-    runs-on: macos-latest
+
     inputs:
       force_build:
         description: Disable checking for newer commit
@@ -21,7 +21,7 @@ concurrency:
   
 jobs:
   check:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     steps:
       - name: Get FFmpeg latest commit
         id: ffmpeg-info
@@ -67,6 +67,7 @@ jobs:
 
   build:
     needs: check
+    runs-on: macos-latest
     strategy:
       matrix:
         os: [win64]
@@ -130,7 +131,7 @@ jobs:
       id-token: write
       attestations: write
     needs: [check, build]
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     strategy:
       matrix:
         os: [win64]
@@ -171,7 +172,7 @@ jobs:
   release:
     needs: [check, build, archive]
     if: '! inputs.no_release'
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     steps:
       - name: Download FFmpeg archives
         uses: actions/download-artifact@v4
