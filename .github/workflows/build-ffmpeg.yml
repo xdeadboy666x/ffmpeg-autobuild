@@ -1,4 +1,4 @@
-name: Build FFmpeg
+9name: Build FFmpeg
 on:
   schedule:
     - cron: '7 11 * * 0'
@@ -34,9 +34,18 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.TOKEN_REPO }}
           
-      - name: Get ${{ inputs.use_own_fork && github.repository_owner || 'xdeadboy666x' }}/ffmpeg-windows-build-helpers latest commit
-        id: ffmpeg-helper-info
-        run: git_owner=${{ inputs.use_own_fork && github.repository_owner || 'xdeadboy666x' }} && git_sha=$(gh api repos/$git_owner/ffmpeg-windows-build-helpers/commits/master -q .sha) && echo git-owner=$git_owner >> $GITHUB_OUTPUT && echo git-sha=$git_sha >> $GITHUB_OUTPUT && echo git-sha-short=${git_sha::7} >> $GITHUB_OUTPUT- name: Get ${{ inputs.use_own_fork && github.repository_owner || 'xdeadboy666x' }}/ffmpeg-windows-build-helpers latest commit
+      - name: Get latest commit of ffmpeg-windows-build-helpers
+  id: ffmpeg-helper-info
+  run: git_owner="${{ inputs.use_own_fork == 'true' && github.repository_owner || 'xdeadboy666x' }}" && git_sha=$(gh api repos/$git_owner/ffmpeg-windows-build-helpers/commits/master -q .sha) && echo "git-owner=$git_owner" >> $GITHUB_OUTPUT && echo "git-sha=$git_sha" >> $GITHUB_OUTPUT && echo "git-sha-short=${git_sha::7}" >> $GITHUB_OUTPUT- name: Get ${{ inputs.use_own_fork && github.repository_owner || 'xdeadboy666x' }}/ffmpeg-windows-build-helpers latest commit
+        #id: ffmpeg-helper-info
+        #run: |
+         # git_owner=${{ inputs.use_own_fork && github.repository_owner || 'xdeadboy666x' }}
+          #git_sha=$(gh api repos/$git_owner/ffmpeg-windows-build-helpers/commits/master -q .sha)
+          #echo git-owner=$git_owner >> $GITHUB_OUTPUT
+          #echo git-sha=$git_sha >> $GITHUB_OUTPUT
+          #cho git-sha-short=${git_sha::7} >> $GITHUB_OUTPUT
+   #   - name: Get ${{ inputs.use_own_fork
+          #github.repository_owner || 'xdeadboy666x' }}/ffmpeg-windows-build-helpers latest commit
     ##    id: ffmpeg-helper-info
      ##   run: git_owner=${{ inputs.use_own_fork && github.repository_owner || 'xdeadboy666x' }} &&
       ##    git_sha=$(gh api repos/$git_owner/ffmpeg-windows-build-helpers/commits/master -q .sha) &&
