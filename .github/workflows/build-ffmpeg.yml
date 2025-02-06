@@ -100,8 +100,11 @@ jobs:
       - name: Dependencies
         run: |
           brew install pipx
-          pipx install setuptools meson ninja
-          brew install libunistring aom dav1d subversion ragel yasm pax nasm gperf autogen autoconf automake cmake git libass freetype gnupg mp3lame sdl2 libtool va vdpau vorbis libxcb pkg-config texinfo wget zlib
+          python3 -m venv myenv
+          source myenv/bin/activate
+          pip install --upgrade pip setuptools meson ninja
+         
+          brew install libunistring aom dav1d subversion ragel yasm pax nasm gperf autogen autoconf automake cmake git opencv libass freetype gnupg mp3lame sdl2 libtool va vdpau vorbis libxcb pkg-config texinfo wget zlib
 
       - name: Compile FFmpeg ${{ needs.check.outputs.git-sha-short }} using ffmpeg-windows-build-helpers ${{ needs.check.outputs.helper-git-sha-short }}
         run: bash ./cross_compile_ffmpeg.sh --ffmpeg-source-dir=$GITHUB_WORKSPACE/ffmpeg-source --gcc-cpu-count=$(nproc) --disable-nonfree=n --sandbox-ok=y --compiler-flavors=${{ matrix.os }}
