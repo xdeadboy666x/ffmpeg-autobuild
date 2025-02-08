@@ -97,8 +97,33 @@ jobs:
         id: date-time-before
         run: |
           echo date-time=$(date +'%Y-%m-%d %H:%M') >> $GITHUB_OUTPUT
+      
+      - name: Dependencies
+        run: |
+          pip3 install setuptools meson ninja --upgrade && sudo apt update -qq && sudo apt-get install -qq -y libpng-dev libunistring-dev libaom-dev libdav1d-dev subversion ragel cvs yasm pax nasm gperf autogen autoconf-archive autoconf automake build-essential cmake libqrencode-dev git-core libass-dev libfreetype6-dev libgnutls28-dev libmp3lame-dev libsdl2-dev libtool libva-dev libvdpau-dev libvorbis-dev libxcb1-dev libxcb-shm0-dev libxcb-xfixes0-dev meson ninja-build pkg-config texinfo wget zlib1g-dev yasm nasm
           
-      - name: Cache GCC toolchain
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Cache GCC Build Script
+        id: cache-gcc-build-script
+        uses: actions/cache@v4
+        with:
+          path: |
+            cross_compilers/mingw-w64-i686/bin/i686-w64-mingw32-gcc
+            cross_compilers/mingw-w64-x86_64/bin/x86_64-w64-mingw32-gcc
+          key: ${{ runner.os }}-gcc-build-script-${{ hashFiles('cross_compile_ffmpeg.sh') }}
+      
+      - name: Download GCC Build Script
+        run: |
+          zeranoe_script_name=mingw-w64-build-r22.local
+          curl -4 file://$patch_dir/$zeranoe_script_name -O --fail || exit 1
+          chmod u+x $zeranoe_script_name
+        if: steps.cache-gcc-build-script.outputs.cache-hit != 'true'
+
+      - name: Build GCC
+        run: |
+          ./cross_compile_ffmpeg.sh- name: Cache GCC toolchain
         uses: actions/cache@v4
         with:
           path: /home/runner/work/ffmpeg-autobuild/ffmpeg-autobuild/sandbox/cross_compilers/pkgs/binutils/build/x86_64-w64-mingw32/
@@ -106,10 +131,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gcc-toolchain-
 
-      - name: Dependencies
-        run: |
-          pip3 install setuptools meson ninja --upgrade && sudo apt update -qq && sudo apt-get install -qq -y libpng-dev libunistring-dev libaom-dev libdav1d-dev subversion ragel cvs yasm pax nasm gperf autogen autoconf-archive autoconf automake build-essential cmake libqrencode-dev git-core libass-dev libfreetype6-dev libgnutls28-dev libmp3lame-dev libsdl2-dev libtool libva-dev libvdpau-dev libvorbis-dev libxcb1-dev libxcb-shm0-dev libxcb-xfixes0-dev meson ninja-build pkg-config texinfo wget zlib1g-dev yasm nasm
-    
       - name: Compile FFmpeg ${{ needs.check.outputs.git-sha-short }} using ffmpeg-windows-build-helpers ${{ needs.check.outputs.helper-git-sha-short }}
         run: |
           bash ./cross_compile_ffmpeg.sh --ffmpeg-source-dir=$GITHUB_WORKSPACE/ffmpeg-source --gcc-cpu-count=$(nproc) --disable-nonfree=n --sandbox-ok=y --compiler-flavors=${{ matrix.os }}
