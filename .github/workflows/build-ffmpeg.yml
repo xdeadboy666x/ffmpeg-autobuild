@@ -98,10 +98,82 @@ jobs:
         run: |
           echo date-time=$(date +'%Y-%m-%d %H:%M') >> $GITHUB_OUTPUT
       
+      - name: Download and Build Cross Compiler
+        run: |
+          download_gcc_build_script() {
+            local zeranoe_script_name=$1
+            rm -f $zeranoe_script_name || exit 1
+            curl -4 file://$patch_dir/$zeranoe_script_name -O --fail || exit 1
+            chmod u+x $zeranoe_script_name
+          }
+
+          install_cross_compiler() {
+            local win32_gcc="cross_compilers/mingw-w64-i686/bin/i686-w64-mingw32-gcc"
+            local win64_gcc="cross_compilers/mingw-w64-x86_64/bin/x86_64-w64-mingw32-gcc"
+            if [[ -f $win32_gcc && -f $win64_gcc ]]; then
+              echo "MinGW-w64 compilers both already installed, not re-installing..."
+              if [[ -z $compiler_flavors ]]; then
+                echo "selecting multi build (both win32 and win64)...since both cross compilers are present assuming you want both..."
+                compiler_flavors=multi
+              fi
+              return
+            fi
+
+            if [[ -z $compiler_flavors ]]; then
+              pick_compiler_flavors
+            fi
+            if [[ $compiler_flavors == "native" ]]; then
+              echo "native build, not building any cross compilers..."
+              return
+            fi
+
+            mkdir -p cross_compilers
+            cd cross_compilers || exit 
+
+            unset CFLAGS 
+            local zeranoe_script_name=mingw-w64-build-r22.local
+            local zeranoe_script_options="--gcc-ver=10.2.0 --mingw-w64-ver=9.0.0 --default-configure --cpu-count=$gcc_cpu_count --disable-shared --clean-build --verbose --allow-overwrite --threads=winpthreads" 
+            if [[ ($compiler_flavors == "win32" || $compiler_flavors == "multi") && ! -f ../$win32_gcc ]]; then
+              echo "Building win32 cross compiler..."
+              download_gcc_build_script $zeranoe_script_name
+              if [[ uname =~ "5.1" ]]; then 
+                sed -i "s/ --enable-secure-api//" $zeranoe_script_name
+              fi
+              CFLAGS=-O2 CXXFLAGS=-O2 nice ./$zeranoe_script_name $zeranoe_script_options --build-type=win32 || exit 1
+              if [[ ! -f ../$win32_gcc ]]; then
+                echo "Failure building 32 bit gcc?"
+                exit 1
+              fi
+            fi
+            if [[ ($compiler_flavors == "win64" || $compiler_flavors == "multi") && ! -f ../$win64_gcc ]]; then
+              echo "Building win64 x86_64 cross compiler..."
+              download_gcc_build_script $zeranoe_script_name
+              CFLAGS=-O2 CXXFLAGS=-O2 nice ./$zeranoe_script_name $zeranoe_script_options --build-type=win64 || exit 1
+              if [[ ! -f ../$win64_gcc ]]; then
+                echo "Failure building 64 bit gcc?"
+                exit 1
+              fi
+            fi
+
+            cd ..
+            echo "Done building (or already built) MinGW-w64 cross-compiler(s) successfully..."
+          }
+          
+          install_cross_compiler
+
+      - name: Cache MinGW-w64 cross-compilers
+        uses: actions/cache@v4
+        with:
+          path: /home/runner/work/ffmpeg-autobuild/ffmpeg-autobuild/sandbox/cross_compilers/pkgs/binutils/build/x86_64-w64-mingw32/
+          key: ${{ runner.os }}-mingw-w64-cross-compilers-${{ hashFiles('**/sandbox/cross_compilers/pkgs/binutils/build/x86_64-w64-mingw32/**/*') }}
+          restore-keys: |
+            ${{ runner.os }}-mingw-w64-cross-compilers-
+
+
       - name: Dependencies
         run: |
-          pip3 install setuptools meson ninja --upgrade && sudo apt update -qq && sudo apt-get install -qq -y libpng-dev libunistring-dev libaom-dev libdav1d-dev subversion ragel cvs yasm pax nasm gperf autogen autoconf-archive autoconf automake build-essential cmake libqrencode-dev git-core libass-dev libfreetype6-dev libgnutls28-dev libmp3lame-dev libsdl2-dev libtool libva-dev libvdpau-dev libvorbis-dev libxcb1-dev libxcb-shm0-dev libxcb-xfixes0-dev meson ninja-build pkg-config texinfo wget zlib1g-dev yasm nasm
-          
+          pip3 install setuptools meson ninja --upgrade && sudo apt update -qq && sudo apt-get install -qq -y libpng-dev libunistring-dev libaom-dev libdav1d-dev subversion ragel cvs yasm pax nasm
+
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -120,10 +192,6 @@ jobs:
           curl -4 file://$patch_dir/$zeranoe_script_name -O --fail || exit 1
           chmod u+x $zeranoe_script_name
         if: steps.cache-gcc-build-script.outputs.cache-hit != 'true'
-
-      - name: Build GCC
-        run: |
-          ./cross_compile_ffmpeg.sh
 
       - name: Compile FFmpeg ${{ needs.check.outputs.git-sha-short }} using ffmpeg-windows-build-helpers ${{ needs.check.outputs.helper-git-sha-short }}
         run: |
@@ -151,7 +219,7 @@ jobs:
       date-time-after: ${{ steps.date-time-after.outputs.date-time }}
       date-time-after-tag: ${{ steps.date-time-after.outputs.date-time-tag }}
       git-date: ${{ steps.git-date.outputs.git-date }}
-      
+
   archive:
     permissions:
       id-token: write
@@ -161,13 +229,13 @@ jobs:
     strategy:
       matrix:
         os: [win64]
-        
+
     steps:
       - name: Download FFmpeg binaries
         uses: actions/download-artifact@v4
         with:
           name: ffmpeg-${{ matrix.os }}
-          
+
       - name: Create LICENSE
         run: |
           echo "This version of ffmpeg has nonfree parts compiled in." >> LICENSE
@@ -178,16 +246,16 @@ jobs:
         uses: actions/attest-build-provenance@v2
         with:
           subject-path: ff*.exe
-          
+
       - name: 7-Zip FFmpeg binaries
         run: 7z a -mx9 ffmpeg-${{ needs.check.outputs.git-sha-short }}-${{ needs.check.outputs.helper-git-sha-short }}-${{ matrix.os }}-nonfree.7z ff{mpeg,probe,play}.exe LICENSE
-        
+
       - name: Generate artifact attestation for FFmpeg archive
         if: '! inputs.no_release'
         uses: actions/attest-build-provenance@v2
         with:
           subject-path: ffmpeg-${{ needs.check.outputs.git-sha-short }}-${{ needs.check.outputs.helper-git-sha-short }}-${{ matrix.os }}-nonfree.7z
-          
+
       - name: Upload FFmpeg archive
         uses: actions/upload-artifact@v4
         with:
@@ -205,7 +273,7 @@ jobs:
         with:
           pattern: ffmpeg-archive-*
           merge-multiple: true
-          
+
       - name: Release FFmpeg archives
         run: |
           gh release create "${{ needs.build.outputs.date-time-after-tag }}-${{ needs.check.outputs.git-sha-short }}-${{ needs.check.outputs.helper-git-sha-short }}" \
