@@ -108,13 +108,12 @@ jobs:
           }
 
           install_cross_compiler() {
-            local win32_gcc="cross_compilers/mingw-w64-i686/bin/i686-w64-mingw32-gcc"
             local win64_gcc="cross_compilers/mingw-w64-x86_64/bin/x86_64-w64-mingw32-gcc"
-            if [[ -f $win32_gcc && -f $win64_gcc ]]; then
+            if [[ -f $win64_gcc ]]; then
               echo "MinGW-w64 compilers both already installed, not re-installing..."
               if [[ -z $compiler_flavors ]]; then
                 echo "selecting multi build (both win32 and win64)...since both cross compilers are present assuming you want both..."
-                compiler_flavors=multi
+                compiler_flavors=win64
               fi
               return
             fi
