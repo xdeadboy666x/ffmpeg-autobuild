@@ -97,6 +97,14 @@ jobs:
         id: date-time-before
         run: |
           echo date-time=$(date +'%Y-%m-%d %H:%M') >> $GITHUB_OUTPUT
+          
+      - name: Cache GCC toolchain
+        uses: actions/cache@v4
+        with:
+          path: /home/runner/work/ffmpeg-autobuild/ffmpeg-autobuild/sandbox/cross_compilers/pkgs/binutils/build/x86_64-w64-mingw32/
+          key: ${{ runner.os }}-gcc-toolchain-${{ hashFiles('**/sandbox/cross_compilers/pkgs/binutils/build/x86_64-w64-mingw32/**/*') }}
+          restore-keys: |
+            ${{ runner.os }}-gcc-toolchain-
 
       - name: Dependencies
         run: |
