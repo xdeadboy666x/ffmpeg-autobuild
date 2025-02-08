@@ -111,17 +111,17 @@ jobs:
             local win64_gcc="cross_compilers/mingw-w64-x86_64/bin/x86_64-w64-mingw32-gcc"
             if [[ -f $win64_gcc ]]; then
               echo "MinGW-w64 compilers both already installed, not re-installing..."
-              if [[ -z $compiler_flavors ]]; then
+              if [[ -z compiler-flavors=${{ matrix.os }} ]]; then
                 echo "selecting multi build (both win32 and win64)...since both cross compilers are present assuming you want both..."
-                compiler_flavors=win64
+                compiler-flavors=${{ matrix.os }}
               fi
               return
             fi
 
-            if [[ -z $compiler_flavors ]]; then
+            if [[ -z compiler-flavors=${{ matrix.os }} ]]; then
               pick_compiler_flavors
             fi
-            if [[ $compiler_flavors == "native" ]]; then
+            if [[ compiler-flavors=${{ matrix.os }} ]]; then
               echo "native build, not building any cross compilers..."
               return
             fi
@@ -132,19 +132,7 @@ jobs:
             unset CFLAGS 
             local zeranoe_script_name=mingw-w64-build-r22.local
             local zeranoe_script_options="--gcc-ver=10.2.0 --mingw-w64-ver=9.0.0 --default-configure --cpu-count=$gcc_cpu_count --disable-shared --clean-build --verbose --allow-overwrite --threads=winpthreads" 
-            if [[ ($compiler_flavors == "win32" || $compiler_flavors == "multi") && ! -f ../$win32_gcc ]]; then
-              echo "Building win32 cross compiler..."
-              download_gcc_build_script $zeranoe_script_name
-              if [[ uname =~ "5.1" ]]; then 
-                sed -i "s/ --enable-secure-api//" $zeranoe_script_name
-              fi
-              CFLAGS=-O2 CXXFLAGS=-O2 nice ./$zeranoe_script_name $zeranoe_script_options --build-type=win32 || exit 1
-              if [[ ! -f ../$win32_gcc ]]; then
-                echo "Failure building 32 bit gcc?"
-                exit 1
-              fi
-            fi
-            if [[ ($compiler_flavors == "win64" || $compiler_flavors == "multi") && ! -f ../$win64_gcc ]]; then
+            if [[ (compiler-flavors == ${{ matrix.os }} || $compiler_flavors == "multi") && ! -f ../$win64_gcc ]]; then
               echo "Building win64 x86_64 cross compiler..."
               download_gcc_build_script $zeranoe_script_name
               CFLAGS=-O2 CXXFLAGS=-O2 nice ./$zeranoe_script_name $zeranoe_script_options --build-type=win64 || exit 1
