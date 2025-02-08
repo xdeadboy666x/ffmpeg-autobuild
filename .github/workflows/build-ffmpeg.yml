@@ -98,80 +98,12 @@ jobs:
         run: |
           echo date-time=$(date +'%Y-%m-%d %H:%M') >> $GITHUB_OUTPUT
       
-      - name: Download and Build Cross Compiler
-        run: |
-          download_gcc_build_script() {
-            local zeranoe_script_name=$1
-            rm -f $zeranoe_script_name || exit 1
-            curl -4 file://$patch_dir/$zeranoe_script_name -O --fail || exit 1
-            chmod u+x $zeranoe_script_name
-          }
-
-          install_cross_compiler() {
-            local win64_gcc="cross_compilers/mingw-w64-x86_64/bin/x86_64-w64-mingw32-gcc"
-            if [[ -f $win64_gcc ]]; then
-              echo "MinGW-w64 compilers both already installed, not re-installing..."
-              if [[ -z compiler-flavors=${{ matrix.os }} ]]; then
-                echo "selecting multi build (both win32 and win64)...since both cross compilers are present assuming you want both..."
-                compiler-flavors=${{ matrix.os }}
-              fi
-              return
-            fi
-
-            if [[ -z compiler-flavors=${{ matrix.os }} ]]; then
-              pick_compiler_flavors
-            fi
-            if [[ compiler-flavors=${{ matrix.os }} ]]; then
-              echo "native build, not building any cross compilers..."
-              return
-            fi
-
-            mkdir -p cross_compilers
-            cd cross_compilers || exit 
-
-            unset CFLAGS 
-            local zeranoe_script_name=mingw-w64-build-r22.local
-            local zeranoe_script_options="--gcc-ver=10.2.0 --mingw-w64-ver=9.0.0 --default-configure --cpu-count=$gcc_cpu_count --disable-shared --clean-build --verbose --allow-overwrite --threads=winpthreads" 
-            if [[ (compiler-flavors == ${{ matrix.os }} || $compiler_flavors == "multi") && ! -f ../$win64_gcc ]]; then
-              echo "Building win64 x86_64 cross compiler..."
-              download_gcc_build_script $zeranoe_script_name
-              CFLAGS=-O2 CXXFLAGS=-O2 nice ./$zeranoe_script_name $zeranoe_script_options --build-type=win64 || exit 1
-              if [[ ! -f ../$win64_gcc ]]; then
-                echo "Failure building 64 bit gcc?"
-                exit 1
-              fi
-            fi
-
-            cd ..
-            echo "Done building (or already built) MinGW-w64 cross-compiler(s) successfully..."
-          }
-          
-          install_cross_compiler
-
-      - name: Cache MinGW-w64 cross-compilers
-        uses: actions/cache@v4
-        with:
-          path: /home/runner/work/ffmpeg-autobuild/ffmpeg-autobuild/sandbox/cross_compilers/pkgs/binutils/build/x86_64-w64-mingw32/
-          key: ${{ runner.os }}-mingw-w64-cross-compilers-${{ hashFiles('**/sandbox/cross_compilers/pkgs/binutils/build/x86_64-w64-mingw32/**/*') }}
-          restore-keys: |
-            ${{ runner.os }}-mingw-w64-cross-compilers-
-
-
       - name: Dependencies
         run: |
           pip3 install setuptools meson ninja --upgrade && sudo apt update -qq && sudo apt-get install -qq -y libpng-dev libunistring-dev libaom-dev libdav1d-dev subversion ragel cvs yasm pax nasm
 
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Cache GCC Build Script
-        id: cache-gcc-build-script
-        uses: actions/cache@v4
-        with:
-          path: |
-            cross_compilers/mingw-w64-i686/bin/i686-w64-mingw32-gcc
-            cross_compilers/mingw-w64-x86_64/bin/x86_64-w64-mingw32-gcc
-          key: ${{ runner.os }}-gcc-build-script-${{ hashFiles('cross_compile_ffmpeg.sh') }}
       
       - name: Compile FFmpeg ${{ needs.check.outputs.git-sha-short }} using ffmpeg-windows-build-helpers ${{ needs.check.outputs.helper-git-sha-short }}
         run: bash ./cross_compile_ffmpeg.sh --ffmpeg-source-dir=$GITHUB_WORKSPACE/ffmpeg-source --gcc-cpu-count=$(nproc) --disable-nonfree=n --sandbox-ok=y --compiler-flavors=${{ matrix.os }}
