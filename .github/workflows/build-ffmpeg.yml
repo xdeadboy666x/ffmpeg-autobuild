@@ -123,13 +123,7 @@ jobs:
 
       - name: Build GCC
         run: |
-          ./cross_compile_ffmpeg.sh- name: Cache GCC toolchain
-        uses: actions/cache@v4
-        with:
-          path: /home/runner/work/ffmpeg-autobuild/ffmpeg-autobuild/sandbox/cross_compilers/pkgs/binutils/build/x86_64-w64-mingw32/
-          key: ${{ runner.os }}-gcc-toolchain-${{ hashFiles('**/sandbox/cross_compilers/pkgs/binutils/build/x86_64-w64-mingw32/**/*') }}
-          restore-keys: |
-            ${{ runner.os }}-gcc-toolchain-
+          ./cross_compile_ffmpeg.sh
 
       - name: Compile FFmpeg ${{ needs.check.outputs.git-sha-short }} using ffmpeg-windows-build-helpers ${{ needs.check.outputs.helper-git-sha-short }}
         run: |
