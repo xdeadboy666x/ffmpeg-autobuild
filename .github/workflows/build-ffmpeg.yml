@@ -173,13 +173,6 @@ jobs:
             cross_compilers/mingw-w64-x86_64/bin/x86_64-w64-mingw32-gcc
           key: ${{ runner.os }}-gcc-build-script-${{ hashFiles('cross_compile_ffmpeg.sh') }}
       
-      - name: Download GCC Build Script
-        run: |
-          zeranoe_script_name=mingw-w64-build-r22.local
-          curl -4 file://$patch_dir/$zeranoe_script_name -O --fail || exit 1
-          chmod u+x $zeranoe_script_name
-        if: steps.cache-gcc-build-script.outputs.cache-hit != 'true'
-
       - name: Compile FFmpeg ${{ needs.check.outputs.git-sha-short }} using ffmpeg-windows-build-helpers ${{ needs.check.outputs.helper-git-sha-short }}
         run: |
           bash ./cross_compile_ffmpeg.sh --ffmpeg-source-dir=$GITHUB_WORKSPACE/ffmpeg-source --gcc-cpu-count=$(nproc) --disable-nonfree=n --sandbox-ok=y --compiler-flavors=${{ matrix.os }}
