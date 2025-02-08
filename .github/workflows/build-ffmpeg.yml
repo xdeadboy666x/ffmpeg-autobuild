@@ -30,7 +30,7 @@ jobs:
           echo git-sha-short=${git_sha::7} >> $GITHUB_OUTPUT
         env:
           GH_TOKEN: ${{ secrets.TOKEN_REPO }}
-          
+
       - name: Get ${{ inputs.use_own_fork && github.repository_owner || 'xdeadboy666x' }}/ffmpeg-windows-build-helpers latest commit
         id: ffmpeg-helper-info
         run: |
@@ -41,7 +41,7 @@ jobs:
           echo git-sha-short=${git_sha::7} >> $GITHUB_OUTPUT
         env:
           GH_TOKEN: ${{ secrets.TOKEN_REPO }}
-          
+
       - name: Get ffmpeg-autobuild latest build
         id: ffmpeg-autobuild-info
         run: |
@@ -50,13 +50,13 @@ jobs:
           echo helper-git-sha=${tag_name:25:7} >> $GITHUB_OUTPUT
         env:
           GH_TOKEN: ${{ secrets.TOKEN_REPO }}
-          
+
       - name: Check if there is newer commit
         if: '! inputs.force_build'
         run: >
           [[ "${{ steps.ffmpeg-info.outputs.git-sha-short }}" != "${{ steps.ffmpeg-autobuild-info.outputs.git-sha }}" ]] ||
           [[ "${{ steps.ffmpeg-helper-info.outputs.git-sha-short }}" != "${{ steps.ffmpeg-autobuild-info.outputs.helper-git-sha }}" ]]
-          
+
     outputs:
       git-sha: ${{ steps.ffmpeg-info.outputs.git-sha }}
       git-sha-short: ${{ steps.ffmpeg-info.outputs.git-sha-short }}
@@ -70,7 +70,7 @@ jobs:
     strategy:
       matrix:
         os: [win64]
-        
+
     steps:
       - name: Checkout ${{ needs.check.outputs.helper-git-owner }}/ffmpeg-windows-build-helpers
         uses: actions/checkout@v4
@@ -78,7 +78,7 @@ jobs:
           repository: ${{ needs.check.outputs.helper-git-owner }}/ffmpeg-windows-build-helpers
           ref: ${{ needs.check.outputs.helper-git-sha }}
           persist-credentials: false
-          
+
       - name: Checkout FFmpeg
         uses: actions/checkout@v4
         with:
@@ -92,26 +92,21 @@ jobs:
         working-directory: ffmpeg-source
         run: |
           echo git-date=$(git log -1 --format=%ci) >> $GITHUB_OUTPUT
-        
+
       - name: Get current date & time before build
         id: date-time-before
         run: |
           echo date-time=$(date +'%Y-%m-%d %H:%M') >> $GITHUB_OUTPUT
-      
+
       - name: Dependencies
         run: |
-          pip3 install --upgrade setuptools meson ninja && \
-sudo apt update -q && \
-sudo apt-get install -q -y \
-    libpng-dev subversion ragel curl texinfo g++ ed autogen gperf \
-    bison flex cvs libva-dev yasm automake libtool autoconf gcc cmake \
-    git make pkg-config zlib1g-dev unzip pax nasm bzip2 autoconf-archive \
-    p7zip-full meson clang gettext patch wget xz-utils coreutils git-core \
-    python-is-python3 libunistring-dev libaom-dev libdav1d-dev \
-    libx264-dev libx265-dev libfdk-aac-dev libopus-dev
-      
+          pip3 install --upgrade setuptools meson ninja --user
+          sudo apt update -q
+          sudo apt-get install -q -y libpng-dev subversion ragel curl texinfo g++ ed autogen gperf bison flex cvs libva-dev yasm automake libtool autoconf gcc cmake git make pkg-config zlib1g-dev unzip pax nasm bzip2 autoconf-archive patch p7zip-full meson clang gettext patch wget xz-utils coreutils git-core python-is-python3 libunistring-dev libaom-dev libdav1d-dev libx264-dev libx265-dev libfdk-aac-dev libopus-dev
+
       - name: Compile FFmpeg ${{ needs.check.outputs.git-sha-short }} using ffmpeg-windows-build-helpers ${{ needs.check.outputs.helper-git-sha-short }}
-        run: bash ./cross_compile_ffmpeg.sh --ffmpeg-source-dir=$GITHUB_WORKSPACE/ffmpeg-source --gcc-cpu-count=$(nproc) --disable-nonfree=n --sandbox-ok=y --compiler-flavors=${{ matrix.os }}
+        run: | 
+          bash ./cross_compile_ffmpeg.sh --ffmpeg-source-dir=$GITHUB_WORKSPACE/ffmpeg-source --gcc-cpu-count=$(nproc) --disable-nonfree=n --sandbox-ok=y --compiler-flavors=${{ matrix.os }}
 
       - name: Get current date & time after build
         id: date-time-after
