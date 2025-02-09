@@ -79,6 +79,7 @@ jobs:
           ref: ${{ needs.check.outputs.helper-git-sha }}
           persist-credentials: false
 
+
       - name: Checkout FFmpeg
         uses: actions/checkout@v4
         with:
@@ -86,6 +87,14 @@ jobs:
           ref: ${{ needs.check.outputs.git-sha }}
           persist-credentials: false
           path: ffmpeg-source
+          
+      - name: Install APT dependencies
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: libpng-dev subversion ragel curl texinfo g++ ed autogen gperf bison flex cvs libva-dev yasm automake libtool autoconf gcc cmake git make pkg-config zlib1g-dev unzip pax nasm bzip2 autoconf-archive patch p7zip-full meson clang gettext patch wget xz-utils coreutils git-core python-is-python3 libunistring-dev libaom-dev libdav1d-dev libx264-dev libx265-dev libfdk-aac-dev libopus-dev
+          
+      - name: Install pip dependencies
+        run: pip3 -q install --upgrade meson ninja setuptools
 
       - name: Get current FFmpeg git date
         id: git-date
@@ -97,12 +106,6 @@ jobs:
         id: date-time-before
         run: |
           echo date-time=$(date +'%Y-%m-%d %H:%M') >> $GITHUB_OUTPUT
-
-      - name: Dependencies
-        run: |
-          pip3 install --upgrade setuptools meson ninja --user
-          sudo apt update -q
-          sudo apt-get install -q -y libpng-dev subversion ragel curl texinfo g++ ed autogen gperf bison flex cvs libva-dev yasm automake libtool autoconf gcc cmake git make pkg-config zlib1g-dev unzip pax nasm bzip2 autoconf-archive patch p7zip-full meson clang gettext patch wget xz-utils coreutils git-core python-is-python3 libunistring-dev libaom-dev libdav1d-dev libx264-dev libx265-dev libfdk-aac-dev libopus-dev
 
       - name: Compile FFmpeg ${{ needs.check.outputs.git-sha-short }} using ffmpeg-windows-build-helpers ${{ needs.check.outputs.helper-git-sha-short }}
         run: | 
