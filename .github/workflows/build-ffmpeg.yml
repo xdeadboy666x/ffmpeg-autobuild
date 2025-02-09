@@ -106,7 +106,7 @@ jobs:
 
       - name: Compile FFmpeg ${{ needs.check.outputs.git-sha-short }} using ffmpeg-windows-build-helpers ${{ needs.check.outputs.helper-git-sha-short }}
         run: | 
-          bash ./cross_compile_ffmpeg.sh --ffmpeg-source-dir=$GITHUB_WORKSPACE/ffmpeg-source --gcc-cpu-count=$(nproc) --disable-nonfree=n --sandbox-ok=y --compiler-flavors=win64
+          bash ./cross_compile_ffmpeg.sh --ffmpeg-source-dir=$GITHUB_WORKSPACE/ffmpeg-source --gcc-cpu-count=$(nproc) --disable-nonfree=n --sandbox-ok=y --compiler-flavors=${{ matrix.os }}
 
       - name: Get current date & time after build
         id: date-time-after
@@ -117,7 +117,7 @@ jobs:
       - name: Upload FFmpeg binaries
         uses: actions/upload-artifact@v4
         with:
-          name: ffmpeg-win64
+          name: ffmpeg-${{ matrix.os }}
           path: |
             ffmpeg-source/ffmpeg.exe
             ffmpeg-source/ffprobe.exe
@@ -145,7 +145,7 @@ jobs:
       - name: Download FFmpeg binaries
         uses: actions/download-artifact@v4
         with:
-          name: ffmpeg-win64
+          name: ffmpeg-${{ matrix.os }}
 
       - name: Create LICENSE
         run: |
@@ -159,19 +159,19 @@ jobs:
           subject-path: ff*.exe
 
       - name: 7-Zip FFmpeg binaries
-        run: 7z a -mx9 ffmpeg-${{ needs.check.outputs.git-sha-short }}-${{ needs.check.outputs.helper-git-sha-short }}-win64-nonfree.7z ff{mpeg,probe,play}.exe LICENSE
+        run: 7z a -mx9 ffmpeg-${{ needs.check.outputs.git-sha-short }}-${{ needs.check.outputs.helper-git-sha-short }}-${{ matrix.os }}-nonfree.7z ff{mpeg,probe,play}.exe LICENSE
 
       - name: Generate artifact attestation for FFmpeg archive
         if: '! inputs.no_release'
         uses: actions/attest-build-provenance@v2
         with:
-          subject-path: ffmpeg-${{ needs.check.outputs.git-sha-short }}-${{ needs.check.outputs.helper-git-sha-short }}-win64-nonfree.7z
+          subject-path: ffmpeg-${{ needs.check.outputs.git-sha-short }}-${{ needs.check.outputs.helper-git-sha-short }}-${{ matrix.os }}-nonfree.7z
 
       - name: Upload FFmpeg archive
         uses: actions/upload-artifact@v4
         with:
-          name: ffmpeg-archive-win64
-          path: ffmpeg-${{ needs.check.outputs.git-sha-short }}-${{ needs.check.outputs.helper-git-sha-short }}-win64-nonfree.7z
+          name: ffmpeg-archive-${{ matrix.os }}
+          path: ffmpeg-${{ needs.check.outputs.git-sha-short }}-${{ needs.check.outputs.helper-git-sha-short }}-${{ matrix.os }}-nonfree.7z
           retention-days: ${{ inputs.no_release && '0' || '1' }}
           compression-level: 0
   release:
