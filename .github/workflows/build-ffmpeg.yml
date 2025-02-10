@@ -111,7 +111,7 @@ jobs:
         id: cache-ffmpeg
         uses: actions/cache@v4
         with:
-          path: /home/runner/work/ffmpeg-autobuild/ffmpeg-autobuild/sandbox/
+          path: /home/runner/work/ffmpeg-autobuild/ffmpeg-autobuild/sandbox/cross_compilers
           key: ${{ env.CACHE_KEY }}
           restore-keys: |
             ${{ env.CACHE_KEY }}
