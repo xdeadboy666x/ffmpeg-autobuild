@@ -97,7 +97,7 @@ jobs:
           packages: libpng-dev subversion libsdl2-dev ragel curl texinfo g++ ed autogen autotools-dev gperf libqrencode-dev bison flex cvs libva-dev yasm automake libtool autoconf gcc cmake git-core make pkg-config zlib1g-dev unzip pax nasm bzip2 autoconf-archive patch p7zip-full meson clang gettext patch wget xz-utils coreutils git-core python-is-python3 libunistring-dev libaom-dev libdav1d-dev libx264-dev libx265-dev libfdk-aac-dev libopus-dev
           
       - name: Install pip dependencies
-        run: pip -q install --upgrade meson ninja setuptools
+        run: pip -q install  -r https://raw.githubusercontent.com/xdeadboy666x/ffmpeg-autobuild/refs/heads/main/requirements.txt --upgrade --user
 
       - name: Get current FFmpeg git date
         id: git-date
