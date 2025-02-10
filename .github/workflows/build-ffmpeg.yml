@@ -112,9 +112,10 @@ jobs:
         uses: actions/cache@v4
         with:
           path: /home/runner/work/ffmpeg-autobuild/ffmpeg-autobuild/sandbox/cross_compilers
-          key: FFmpeg-${{ env.CACHE_KEY }}-${{ needs.check.outputs.helper-git-sha-short }}-${{ needs.check.outputs.git-sha-short }}
+          key: FFmpeg-${{ env.CACHE_KEY }}-${{ needs.check.outputs.helper-git-sha-short }}
           restore-keys: |
-            FFmpeg-${{ env.CACHE_KEY }}-${{ needs.check.outputs.helper-git-sha-short }}-
+            FFmpeg-${{ env.CACHE_KEY }}- 
+            FFmpeg-${{ env.CACHE_KEY }}
       
       - name: Compile FFmpeg ${{ needs.check.outputs.git-sha-short }} using ffmpeg-windows-build-helpers ${{ needs.check.outputs.helper-git-sha-short }}
         run: bash ./cross_compile_ffmpeg.sh --ffmpeg-source-dir=$GITHUB_WORKSPACE/ffmpeg-source --gcc-cpu-count=$(nproc) --disable-nonfree=n --sandbox-ok=y --compiler-flavors=${{ matrix.os }}
