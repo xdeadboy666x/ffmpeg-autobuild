@@ -106,10 +106,18 @@ jobs:
         id: date-time-before
         run: |
           echo date-time=$(date +'%Y-%m-%d %H:%M') >> $GITHUB_OUTPUT
+          
+      - name: Cache FFmpeg build
+        id: cache-ffmpeg
+        uses: actions/cache@v3
+        with:
+          path: ${{ github.workspace }}/ffmpeg-source
+          key: ${{ runner.os }}-ffmpeg-source-${{ needs.check.outputs.git-sha-short }}-${{ needs.check.outputs.helper-git-sha-short }}
+          restore-keys: |
+            ${{ runner.os }}-ffmpeg-source-
 
       - name: Compile FFmpeg ${{ needs.check.outputs.git-sha-short }} using ffmpeg-windows-build-helpers ${{ needs.check.outputs.helper-git-sha-short }}
-        run: | 
-          bash ./cross_compile_ffmpeg.sh --ffmpeg-source-dir=$GITHUB_WORKSPACE/ffmpeg-source --gcc-cpu-count=$(nproc) --disable-nonfree=n --sandbox-ok=y --compiler-flavors=${{ matrix.os }}
+        run: bash ./cross_compile_ffmpeg.sh --ffmpeg-source-dir=$GITHUB_WORKSPACE/ffmpeg-source --gcc-cpu-count=$(nproc) --disable-nonfree=n --sandbox-ok=y --compiler-flavors=${{ matrix.os }}
 
       - name: Get current date & time after build
         id: date-time-after
