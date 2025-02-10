@@ -94,7 +94,7 @@ jobs:
           packages: libpng-dev subversion libsdl2-dev ragel curl texinfo g++ ed autogen autotools-dev gperf libqrencode-dev bison flex cvs libva-dev yasm automake libtool autoconf gcc cmake git-core make pkg-config zlib1g-dev unzip pax nasm bzip2 autoconf-archive patch p7zip-full meson clang gettext patch wget xz-utils coreutils git-core python-is-python3 libunistring-dev libaom-dev libdav1d-dev libx264-dev libx265-dev libfdk-aac-dev libopus-dev
           
       - name: Install pip dependencies
-        run: pip3 -q install --upgrade meson ninja setuptools
+        run: pip -q install --upgrade meson ninja setuptools
 
       - name: Get current FFmpeg git date
         id: git-date
@@ -117,10 +117,16 @@ jobs:
             FFmpeg-${{ env.CACHE_KEY }}- 
             FFmpeg-${{ env.CACHE_KEY }}
             
-      - name: Compile FFmpeg ${{ needs.check.outputs.git-sha-short }} using ffmpeg-windows-build-helpers ${{ needs.check.outputs.helper-git-sha-short }}
+      - name: Compile GCC ${{ needs.check.outputs.git-sha-short }} using ffmpeg-windows-build-helpers ${{ needs.check.outputs.helper-git-sha-short }}
         run: |
           chmod +x "build_cross_compiler.sh"
           ./build_cross_compiler.sh --ffmpeg-source-dir=$GITHUB_WORKSPACE/ffmpeg-source --gcc-cpu-count=$(nproc) --disable-nonfree=n --sandbox-ok=y --compiler-flavors=multi name: Compile FFmpeg ${{ needs.check.outputs.git-sha-short }} using ffmpeg-windows-build-helpers ${{ needs.check.outputs.helper-git-sha-short }}
+ #         ./cross_compile_ffmpeg.sh --ffmpeg-source-dir=$GITHUB_WORKSPACE/ffmpeg-source --gcc-cpu-count=$(nproc) --disable-nonfree=n --sandbox-ok=y --compiler-flavors=multi name: Compile FFmpeg ${{ needs.check.outputs.git-sha-short }} using ffmpeg-windows-build-helpers ${{ needs.check.outputs.helper-git-sha-short }}
+ 
+      - name: Compile FFmpeg ${{ needs.check.outputs.git-sha-short }} using ffmpeg-windows-build-helpers ${{ needs.check.outputs.helper-git-sha-short }}
+        run: |
+#          chmod +x "build_cross_compiler.sh"
+#          ./build_cross_compiler.sh --ffmpeg-source-dir=$GITHUB_WORKSPACE/ffmpeg-source --gcc-cpu-count=$(nproc) --disable-nonfree=n --sandbox-ok=y --compiler-flavors=multi name: Compile FFmpeg ${{ needs.check.outputs.git-sha-short }} using ffmpeg-windows-build-helpers ${{ needs.check.outputs.helper-git-sha-short }}
           ./cross_compile_ffmpeg.sh --ffmpeg-source-dir=$GITHUB_WORKSPACE/ffmpeg-source --gcc-cpu-count=$(nproc) --disable-nonfree=n --sandbox-ok=y --compiler-flavors=multi name: Compile FFmpeg ${{ needs.check.outputs.git-sha-short }} using ffmpeg-windows-build-helpers ${{ needs.check.outputs.helper-git-sha-short }}
 
       - name: Get current date & time after build
