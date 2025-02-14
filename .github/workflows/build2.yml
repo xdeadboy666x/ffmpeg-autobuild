@@ -45,7 +45,7 @@ jobs:
             FFmpeg-${{ runner.os }}-${{ env.CACHE_KEY }}-
             FFmpeg-${{ runner.os }}-
 
-      - name: Compile FFmpeg ${{ needs.check.outputs.git-sha-short }} using ffmpeg-build-script ${{ needs.check.outputs.helper-git-sha-short }}
+      - name: Compile FFmpeg
         run: |
           export TERM=xterm
           bash ./build-ffmpeg.sh --build --enable-gpl-and-non-free --compiler=gcc --jobs 4
