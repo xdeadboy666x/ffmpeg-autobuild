@@ -130,7 +130,10 @@ jobs:
           restore-keys: |
             FFmpeg-${{ runner.os }}-${{ env.CACHE_KEY }}-
             FFmpeg-${{ runner.os }}-
-
+      
+      - name: Force use of system Meson/Ninja
+        run: export PATH="/usr/bin:$PATH"
+      
       - name: Install APT dependencies
         run: |
           sudo apt update && sudo apt-get install -y \
