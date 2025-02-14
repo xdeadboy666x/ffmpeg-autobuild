@@ -19,36 +19,108 @@ concurrency:
   group: ${{ github.workflow }}
   
 jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get FFmpeg latest commit
+        id: ffmpeg-info
+        run: |
+          git_sha=$(gh api repos/FFmpeg/FFmpeg/commits/master -q .sha)
+          echo git-sha=$git_sha >> $GITHUB_OUTPUT
+          echo git-sha-short=${git_sha::7} >> $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ secrets.TOKEN_REPO }}
+
+      - name: Get ${{ inputs.use_own_fork && github.repository_owner || 'xdeadboy666x' }}/ffmpeg-build-script latest commit
+        id: ffmpeg--build-script-info
+        run: |
+          git_owner=${{ inputs.use_own_fork && github.repository_owner || 'xdeadboy666x' }}
+          git_sha=$(gh api repos/$git_owner/ffmpeg-build-script/commits/master -q .sha)
+          echo git-owner=$git_owner >> $GITHUB_OUTPUT
+          echo git-sha=$git_sha >> $GITHUB_OUTPUT
+          echo git-sha-short=${git_sha::7} >> $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ secrets.TOKEN_REPO }}
+
+      - name: Get ffmpeg-build-script latest build
+        id: ffmpeg-build-script-info
+        run: |
+          tag_name=$(gh api repos/$GITHUB_REPOSITORY/releases/latest -q .tag_name)
+          echo git-sha=${tag_name:17:7} >> $GITHUB_OUTPUT
+          echo ffmpeg-build-script-git-sha=${tag_name:25:7} >> $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ secrets.TOKEN_REPO }}
+
+      - name: Check if there is newer commit
+        if: '! inputs.force_build'
+        run: >
+          [[ "${{ steps.ffmpeg-info.outputs.git-sha-short }}" != "${{ steps.ffmpeg-build-script-info.outputs.git-sha }}" ]] ||
+          [[ "${{ steps.ffmpeg-build-script-info.outputs.git-sha-short }}" != "${{ steps.ffmpeg-build-script-info.outputs.ffmpeg-build-script-git-sha }}" ]]
+
+    outputs:
+      git-sha: ${{ steps.ffmpeg-info.outputs.git-sha }}
+      git-sha-short: ${{ steps.ffmpeg-info.outputs.git-sha-short }}
+      ffmpeg-build-script-git-owner: ${{ steps.ffmpeg--build-script-info.outputs.git-owner }}
+      ffmpeg-build-script-git-sha: ${{ steps.ffmpeg--build-script-info.outputs.git-sha }}
+      ffmpeg-build-script-git-sha-short: ${{ steps.ffmpeg--build-script-info.outputs.git-sha-short }}
+
   build:
+    needs: check
     runs-on: ubuntu-latest
     strategy:
       matrix:
         os: [win64]
 
     steps:
+      - name: Checkout ${{ needs.check.outputs.ffmpeg-build-script-git-owner }}/ffmpeg-build-script
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ needs.check.outputs.ffmpeg-build-script-git-owner }}/ffmpeg-build-script
+          ref: ${{ needs.check.outputs.ffmpeg-build-script-git-sha }}
+          persist-credentials: false
+
+
+      - name: Checkout FFmpeg
+        uses: actions/checkout@v4
+        with:
+          repository: FFmpeg/FFmpeg
+          ref: ${{ needs.check.outputs.git-sha }}
+          persist-credentials: false
+          path: ffmpeg-source
           
       - name: Install APT dependencies
         uses: awalsh128/cache-apt-pkgs-action@latest
         with:
           packages: subversion python-is-python3 libfreetype-dev libgnutls-dev libmp3lame-dev libsdl2-dev libtool libva-dev libvdpau-dev libvorbis-dev libxcb1-dev libxcb-shm0-dev libxcb-xfixes0-dev ragel build-essential libass-dev autoconf automake curl texinfo libpulse-dev llvm g++ ed bison flex cvs yasm cmake git libqrencode-dev make pkg-config zlib1g-dev unzip pax nasm gperf libunistring-dev libaom-dev libdav1d-dev autogen bzip2 autoconf-archive p7zip-full meson clang gettext libpng-dev autotools-dev patch wget xz-utils coreutils libx264-dev libx265-dev libfdk-aac-dev libopus-dev
-      
+          
       - name: Install pip dependencies
-        run: pip install  -r https://raw.githubusercontent.com/xdeadboy666x/ffmpeg-build-script/refs/heads/master/packages.txt --upgrade --user
+        run: pip -q install  -r https://raw.githubusercontent.com/xdeadboy666x/ffmpeg-build-script/refs/heads/master/packages.txt --upgrade --user
 
+      - name: Get current FFmpeg git date
+        id: git-date
+        working-directory: ffmpeg-source
+        run: |
+          echo git-date=$(git log -1 --format=%ci) >> $GITHUB_OUTPUT
+
+      - name: Get current date & time before build
+        id: date-time-before
+        run: |
+          echo date-time=$(date +'%Y-%m-%d %H:%M') >> $GITHUB_OUTPUT
+          
       - name: Cache FFmpeg builds
         id: cache-ffmpeg
         uses: actions/cache@v4
         with:
-          path: ${{ github.workspace }}/
-          key: FFmpeg-${{ runner.os }}-${{ env.CACHE_KEY }}-${{ needs.check.outputs.helper-git-sha-short }}
+          path: ${{ github.workspace }}/sandbox
+          key: FFmpeg-${{ runner.os }}-${{ env.CACHE_KEY }}-${{ needs.check.outputs.ffmpeg-build-script-git-sha-short }}
           restore-keys: |
             FFmpeg-${{ runner.os }}-${{ env.CACHE_KEY }}-
             FFmpeg-${{ runner.os }}-
 
-      - name: Compile FFmpeg
+      - name: Compile FFmpeg ${{ needs.check.outputs.git-sha-short }} using ffmpeg-build-script ${{ needs.check.outputs.ffmpeg-build-script-git-sha-short }}
         run: |
           export TERM=xterm
-          bash ./build-ffmpeg.sh --build --enable-gpl-and-non-free --compiler=gcc --jobs 4
+          bash ./cross_compile_ffmpeg.sh --ffmpeg-source-dir=$GITHUB_WORKSPACE/ffmpeg-source --gcc-cpu-count=$(nproc) --disable-nonfree=n --sandbox-ok=y --compiler-flavors=${{ matrix.os }}
 
       - name: Install Wine
         run: sudo apt-get install -y wine64
@@ -84,7 +156,7 @@ jobs:
     permissions:
       id-token: write
       attestations: write
-    needs: [build]
+    needs: [check, build]
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -108,23 +180,23 @@ jobs:
           subject-path: ff*.exe
 
       - name: 7-Zip FFmpeg binaries
-        run: 7z a -mx9 ffmpeg-${{ needs.check.outputs.git-sha-short }}-${{ needs.check.outputs.helper-git-sha-short }}-${{ matrix.os }}-nonfree.7z ff{mpeg,probe,play}.exe LICENSE
+        run: 7z a -mx9 ffmpeg-${{ needs.check.outputs.git-sha-short }}-${{ needs.check.outputs.ffmpeg-build-script-git-sha-short }}-${{ matrix.os }}-nonfree.7z ff{mpeg,probe,play}.exe LICENSE
 
       - name: Generate artifact attestation for FFmpeg archive
         if: '! inputs.no_release'
         uses: actions/attest-build-provenance@v2
         with:
-          subject-path: ffmpeg-${{ needs.check.outputs.git-sha-short }}-${{ needs.check.outputs.helper-git-sha-short }}-${{ matrix.os }}-nonfree.7z
+          subject-path: ffmpeg-${{ needs.check.outputs.git-sha-short }}-${{ needs.check.outputs.ffmpeg-build-script-git-sha-short }}-${{ matrix.os }}-nonfree.7z
 
       - name: Upload FFmpeg archive
         uses: actions/upload-artifact@v4
         with:
           name: ffmpeg-archive-${{ matrix.os }}
-          path: ffmpeg-${{ needs.check.outputs.git-sha-short }}-${{ needs.check.outputs.helper-git-sha-short }}-${{ matrix.os }}-nonfree.7z
+          path: ffmpeg-${{ needs.check.outputs.git-sha-short }}-${{ needs.check.outputs.ffmpeg-build-script-git-sha-short }}-${{ matrix.os }}-nonfree.7z
           retention-days: ${{ inputs.no_release && '0' || '1' }}
           compression-level: 0
   release:
-    needs: [build, archive]
+    needs: [check, build, archive]
     if: '! inputs.no_release'
     runs-on: ubuntu-latest
     steps:
@@ -136,10 +208,10 @@ jobs:
 
       - name: Release FFmpeg archives
         run: |
-          gh release create "${{ needs.build.outputs.date-time-after-tag }}-${{ needs.check.outputs.git-sha-short }}-${{ needs.check.outputs.helper-git-sha-short }}" \
-          ffmpeg-${{ needs.check.outputs.git-sha-short }}-${{ needs.check.outputs.helper-git-sha-short }}-win64-nonfree.7z \
+          gh release create "${{ needs.build.outputs.date-time-after-tag }}-${{ needs.check.outputs.git-sha-short }}-${{ needs.check.outputs.ffmpeg-build-script-git-sha-short }}" \
+          ffmpeg-${{ needs.check.outputs.git-sha-short }}-${{ needs.check.outputs.ffmpeg-build-script-git-sha-short }}-win64-nonfree.7z \
           -n "FFmpeg nonfree git-${{ needs.check.outputs.git-sha }} in ${{ needs.build.outputs.git-date }} built on ${{ needs.build.outputs.date-time-after }} started at ${{ needs.build.outputs.date-time-before }}
-          Using ${{ needs.check.outputs.helper-git-owner }}/ffmpeg-build-script git-${{ needs.check.outputs.helper-git-sha }}" \
+          Using ${{ needs.check.outputs.ffmpeg-build-script-git-owner }}/ffmpeg-build-script git-${{ needs.check.outputs.ffmpeg-build-script-git-sha }}" \
           -t "${{ needs.build.outputs.date-time-after }} ${{ needs.check.outputs.git-sha-short }}"
         env:
           GH_TOKEN: ${{ secrets.TOKEN_REPO }}
