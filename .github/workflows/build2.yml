@@ -93,7 +93,7 @@ jobs:
           python-version: '3.12'
 
       - name: Set up CMake
-        uses: lukka/get-cmake@vlatest
+        uses: lukka/get-cmake@latest
 
       - name: Install dependencies
         run: sudo apt-get install -y re2c curl
