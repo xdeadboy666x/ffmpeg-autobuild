@@ -98,16 +98,6 @@ jobs:
 
       - name: Set up CMake
         uses: lukka/get-cmake@latest
-      
-      - name: Build Ninja
-        run: |
-          curl -LSso ninja.tar.gz https://github.com/ninja-build/ninja/archive/refs/tags/v1.12.1.tar.gz
-          tar -xzf ninja.tar.gz
-          cd ninja-*
-          re2c_path=$(command -v re2c)
-          cmake -B build -DCMAKE_INSTALL_PREFIX=/usr/local -DCMAKE_BUILD_TYPE=Release -DRE2C=$re2c_path -DBUILD_TESTING=OFF -Wno-dev
-          make -j$(nproc) -C build
-          sudo make -C build install
           
       - name: Install dependencies
         run: sudo apt-get install -y re2c curl
