@@ -101,7 +101,7 @@ jobs:
       
       - name: Build Ninja
         run: |
-          curl -LSso ninja.tar.gz https://github.com/ninja-build/ninja/archive/refs/tags/vlatest.tar.gz
+          curl -LSso ninja.tar.gz https://github.com/ninja-build/ninja/archive/refs/tags/v1.12.1.tar.gz
           tar -xzf ninja.tar.gz
           cd ninja-*
           re2c_path=$(command -v re2c)
@@ -114,7 +114,7 @@ jobs:
 
       - name: Build Meson
         run: |
-          curl -LSso meson.tar.gz https://github.com/mesonbuild/meson/archive/refs/tags/latest.tar.gz
+          curl -LSso meson.tar.gz https://github.com/mesonbuild/meson/archive/refs/tags/1.7.0.tar.gz
           tar -xzf meson.tar.gz
           cd meson-*
           sudo python3 setup.py build
