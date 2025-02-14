@@ -79,7 +79,6 @@ jobs:
           ref: ${{ needs.check.outputs.ffmpeg-build-script-git-sha }}
           persist-credentials: false
 
-
       - name: Checkout FFmpeg
         uses: actions/checkout@v4
         with:
@@ -87,21 +86,10 @@ jobs:
           ref: ${{ needs.check.outputs.git-sha }}
           persist-credentials: false
           path: ffmpeg-source
-      
-      - name: Install APT dependencies
-        uses: awalsh128/cache-apt-pkgs-action@latest
-        with:
-          packages: >
-            subversion python-is-python3 libfreetype-dev libgnutls-dev libmp3lame-dev libsdl2-dev 
-            libtool libva-dev libvdpau-dev libvorbis-dev libxcb1-dev libxcb-shm0-dev libxcb-xfixes0-dev 
-            ragel build-essential libass-dev autoconf automake curl texinfo libpulse-dev llvm g++ ed 
-            bison flex cvs yasm cmake git libqrencode-dev make pkg-config zlib1g-dev unzip pax nasm 
-            gperf libunistring-dev libaom-dev libdav1d-dev autogen bzip2 autoconf-archive p7zip-full 
-            meson clang gettext libpng-dev autotools-dev patch wget xz-utils coreutils libx264-dev 
-            libx265-dev libfdk-aac-dev libopus-dev
-      
+          
       - name: Install pip dependencies
-        run: pip -q install  -r https://raw.githubusercontent.com/xdeadboy666x/ffmpeg-build-script/refs/heads/master/packages.txt --upgrade --user
+        run: |
+          pip -q install -r https://raw.githubusercontent.com/xdeadboy666x/ffmpeg-build-script/refs/heads/master/packages.txt --upgrade --user
 
       - name: Get current FFmpeg git date
         id: git-date
@@ -113,7 +101,7 @@ jobs:
         id: date-time-before
         run: |
           echo date-time=$(date +'%Y-%m-%d %H:%M') >> $GITHUB_OUTPUT
-          
+
       - name: Cache FFmpeg builds
         id: cache-ffmpeg
         uses: actions/cache@v4
@@ -124,10 +112,29 @@ jobs:
             FFmpeg-${{ runner.os }}-${{ env.CACHE_KEY }}-
             FFmpeg-${{ runner.os }}-
 
-      - name: Compile FFmpeg ${{ needs.check.outputs.git-sha-short }} using ffmpeg-build-script ${{ needs.check.outputs.ffmpeg-build-script-git-sha-short }}
+      - name: Install APT dependencies
         run: |
-          export TERM=xterm
-          bash ./build-ffmpeg.sh --build --enable-gpl-and-non-free --compiler=gcc --jobs 4
+          sudo apt update && sudo apt-get install -y \
+            subversion python-is-python3 libfreetype-dev libgnutls-dev libmp3lame-dev libsdl2-dev \
+            libtool libva-dev libvdpau-dev libvorbis-dev libxcb1-dev libxcb-shm0-dev libxcb-xfixes0-dev \
+            ragel build-essential libass-dev autoconf automake curl texinfo libpulse-dev llvm g++ ed \
+            bison flex cvs yasm cmake git libqrencode-dev make pkg-config zlib1g-dev unzip pax nasm \
+            gperf libunistring-dev libaom-dev libdav1d-dev autogen bzip2 autoconf-archive p7zip-full \
+            meson clang gettext libpng-dev autotools-dev patch wget xz-utils coreutils libx264-dev \
+            libx265-dev libfdk-aac-dev libopus-dev cppcheck libgegl-0.4-0 libgoogle-perftools4 \
+            libacl1-dev libdecor-0-dev libmimalloc-dev libpipewire-0.3-dev libpsl-dev \
+            librust-jemalloc-sys-dev librust-malloc-buf-dev libsrt-doc libsvtav1-dev \
+            libsvtav1dec-dev libsvtav1enc-dev libtbbmalloc2 libwayland-dev libcamd2 libccolamd2 \
+            libcholmod3 libcolamd2 libsuitesparseconfig5 libumfpack5 libamd2 openjdk-21-jdk-headless \
+            autopoint ccache clang cmake gettext gperf ladspa-sdk libbluray-dev libbs2b-dev \
+            libcaca-dev libcdio-dev libcdio-paranoia-dev libcdparanoia-dev libchromaprint-dev \
+            libdav1d-dev libgl1-mesa-dev libglu1-mesa-dev libgme-dev libgsm1-dev libjack-dev \
+            libmodplug-dev libnghttp2-dev libnghttp3-dev libshine-dev libsmbclient-dev libsnappy-dev \
+            libspeex-dev libssh-dev libtesseract-dev libtwolame-dev libv4l-dev libvo-amrwbenc-dev \
+            libvpl-dev libxi-dev libyuv-dev libzvbi-dev valgrind zlib1g-dev liblzma-dev liblz4-dev
+
+      - name: Compile FFmpeg ${{ needs.check.outputs.git-sha-short }} using ffmpeg-build-script ${{ needs.check.outputs.ffmpeg-build-script-git-sha-short }}
+        run: export TERM=xterm && bash build-ffmpeg.sh --build --enable-gpl-and-non-free --compiler=gcc --jobs $(nproc)
           
       - name: Install Wine
         run: sudo apt-get install -y wine64
