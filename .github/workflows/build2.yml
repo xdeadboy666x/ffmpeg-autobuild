@@ -91,21 +91,14 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: '3.12'
+      
+      - name: Install pip dependencies
+        run: |
+          pip3 install -r https://raw.githubusercontent.com/xdeadboy666x/ffmpeg-build-script/refs/heads/master/packages.txt --upgrade --user
 
       - name: Set up CMake
         uses: lukka/get-cmake@latest
-
-      - name: Install dependencies
-        run: sudo apt-get install -y re2c curl
-
-      - name: Build Meson
-        run: |
-          curl -LSso meson.tar.gz https://github.com/mesonbuild/meson/archive/refs/tags/latest.tar.gz
-          tar -xzf meson.tar.gz
-          cd meson-*
-          sudo python3 setup.py build
-          sudo python3 setup.py install
-
+      
       - name: Build Ninja
         run: |
           curl -LSso ninja.tar.gz https://github.com/ninja-build/ninja/archive/refs/tags/vlatest.tar.gz
@@ -116,10 +109,17 @@ jobs:
           make -j$(nproc) -C build
           sudo make -C build install
           
-      - name: Install pip dependencies
-        run: |
-          pip3 install -r https://raw.githubusercontent.com/xdeadboy666x/ffmpeg-build-script/refs/heads/master/packages.txt --upgrade --user
+      - name: Install dependencies
+        run: sudo apt-get install -y re2c curl
 
+      - name: Build Meson
+        run: |
+          curl -LSso meson.tar.gz https://github.com/mesonbuild/meson/archive/refs/tags/latest.tar.gz
+          tar -xzf meson.tar.gz
+          cd meson-*
+          sudo python3 setup.py build
+          sudo python3 setup.py install
+        
       - name: Get current FFmpeg git date
         id: git-date
         working-directory: ffmpeg-source
