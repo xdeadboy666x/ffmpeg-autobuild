@@ -115,13 +115,19 @@ jobs:
           key: FFmpeg-${{ runner.os }}-${{ env.CACHE_KEY }}-${{ needs.check.outputs.helper-git-sha-short }}
           restore-keys: |
             FFmpeg-${{ runner.os }}-${{ env.CACHE_KEY }}-
-            FFmpeg-${{ runner.os }}-${{ env.CACHE_KEY }}
             FFmpeg-${{ runner.os }}-
 
       - name: Compile FFmpeg ${{ needs.check.outputs.git-sha-short }} using ffmpeg-windows-build-helpers ${{ needs.check.outputs.helper-git-sha-short }}
         run: |
           export TERM=xterm
           bash ./cross_compile_ffmpeg.sh --ffmpeg-source-dir=$GITHUB_WORKSPACE/ffmpeg-source --gcc-cpu-count=$(nproc) --disable-nonfree=n --sandbox-ok=y --compiler-flavors=${{ matrix.os }}
+
+      - name: Install Wine
+        run: sudo apt-get install -y wine64
+
+      - name: Verify FFmpeg binary
+        run: |
+          wine ./ffmpeg-source/ffmpeg.exe -version
 
       - name: Get current date & time after build
         id: date-time-after
