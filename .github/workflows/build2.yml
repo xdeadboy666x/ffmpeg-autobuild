@@ -115,7 +115,7 @@ jobs:
       - name: Install APT dependencies
         run: |
           sudo apt update && sudo apt-get install -y \
-            subversion python-is-python3 libfreetype-dev libgnutls-dev libmp3lame-dev libsdl2-dev \
+            subversion python-is-python3 libfreetype6-dev libgnutls28-dev libmp3lame-dev libsdl2-dev \
             libtool libva-dev libvdpau-dev libvorbis-dev libxcb1-dev libxcb-shm0-dev libxcb-xfixes0-dev \
             ragel build-essential libass-dev autoconf automake curl texinfo libpulse-dev llvm g++ ed \
             bison flex cvs yasm cmake git libqrencode-dev make pkg-config zlib1g-dev unzip pax nasm \
