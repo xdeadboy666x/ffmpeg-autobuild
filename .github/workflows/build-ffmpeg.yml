@@ -102,8 +102,7 @@ jobs:
         with:
           packages: ragel cvs yasm pax nasm gperf autogen autoconf-archive
           version: 1.0
-          
-      - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           working-directory: ffmpeg-source
