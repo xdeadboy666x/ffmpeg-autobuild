@@ -102,13 +102,12 @@ jobs:
         with:
           packages: ragel cvs yasm pax nasm gperf autogen autoconf-archive
           version: 1.0
-
+          
+      - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          repository: ${{ needs.check.outputs.helper-git-owner }}/ffmpeg-windows-build-helpers
-          python-version: '3.11'
           cache: 'pip'
-      - run: pip install -r requirements.txt --user
+      - run: pip install -r https://raw.githubusercontent.com/xdeadboy666x/ffmpeg-autobuild/refs/heads/main/requirements.txt --user
 
       - name: Get current FFmpeg git date
         id: git-date
