@@ -76,7 +76,7 @@ jobs:
         id: cache-ffmpeg
         uses: actions/cache@v4
         with:
-          path: ${{ github.workspace }}/sandbox/cross_compilers
+          path: $PWD/sandbox/cross_compilers
           key: FFmpeg-${{ runner.os }}-${{ env.CACHE_KEY }}-${{ needs.check.outputs.helper-git-sha-short }}
           restore-keys: |
             FFmpeg-${{ runner.os }}-${{ env.CACHE_KEY }}-
@@ -101,9 +101,10 @@ jobs:
         uses: awalsh128/cache-apt-pkgs-action@latest
         with:
           packages: ragel cvs yasm pax nasm gperf autogen autoconf-archive
+          version: 1.0
           
       - name: Install pip dependencies
-        run: pip -q install  -r https://raw.githubusercontent.com/xdeadboy666x/ffmpeg-autobuild/refs/heads/main/requirements.txt --upgrade --user
+        run: pip -q install -r https://raw.githubusercontent.com/xdeadboy666x/ffmpeg-autobuild/refs/heads/main/requirements.txt --upgrade --user
 
       - name: Get current FFmpeg git date
         id: git-date
@@ -117,9 +118,7 @@ jobs:
           echo date-time=$(date +'%Y-%m-%d %H:%M') >> $GITHUB_OUTPUT
           
       - name: Compile FFmpeg ${{ needs.check.outputs.git-sha-short }} using ffmpeg-windows-build-helpers ${{ needs.check.outputs.helper-git-sha-short }}
-        run: |
-          export TERM=xterm
-          bash ./cross_compile_ffmpeg.sh --ffmpeg-source-dir=$GITHUB_WORKSPACE/ffmpeg-source --gcc-cpu-count=$(nproc) --build-cpu-count=$(nproc) --disable-nonfree=n --sandbox-ok=y --build-intel-qsv=y --build-lsw=y --build-svt-hevc=y --compiler-flavors=${{ matrix.os }}
+        run: export TERM=xterm && ./cross_compile_ffmpeg.sh --ffmpeg-source-dir=$GITHUB_WORKSPACE/ffmpeg-source --gcc-cpu-count=$(nproc) --build-cpu-count=$(nproc) --disable-nonfree=n --sandbox-ok=y --build-intel-qsv=y --build-lsw=y --build-svt-hevc=y --compiler-flavors=${{ matrix.os }}
 
       - name: Install Wine
         run: sudo apt-get install -y wine64
