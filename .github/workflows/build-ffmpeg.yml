@@ -66,19 +66,28 @@ jobs:
 
   build:
     needs: check
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
-        os: [win64]
+        os: [win64, win32]
 
     steps:
+      - name: Cache FFmpeg builds
+        id: cache-ffmpeg
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/sandbox/cross_compilers
+          key: FFmpeg-${{ runner.os }}-${{ env.CACHE_KEY }}-${{ needs.check.outputs.helper-git-sha-short }}
+          restore-keys: |
+            FFmpeg-${{ runner.os }}-${{ env.CACHE_KEY }}-
+            FFmpeg-${{ runner.os }}-
+
       - name: Checkout ${{ needs.check.outputs.helper-git-owner }}/ffmpeg-windows-build-helpers
         uses: actions/checkout@v4
         with:
           repository: ${{ needs.check.outputs.helper-git-owner }}/ffmpeg-windows-build-helpers
           ref: ${{ needs.check.outputs.helper-git-sha }}
           persist-credentials: false
-
 
       - name: Checkout FFmpeg
         uses: actions/checkout@v4
@@ -91,7 +100,7 @@ jobs:
       - name: Install APT dependencies
         uses: awalsh128/cache-apt-pkgs-action@latest
         with:
-          packages: libpng-dev subversion libsdl2-dev ragel curl texinfo g++ ed autogen autotools-dev gperf libqrencode-dev bison flex cvs libva-dev yasm automake libtool autoconf gcc cmake git-core make pkg-config zlib1g-dev unzip pax nasm bzip2 autoconf-archive patch p7zip-full meson clang gettext patch wget xz-utils coreutils git-core python-is-python3 libunistring-dev libaom-dev libdav1d-dev libx264-dev libx265-dev libfdk-aac-dev libopus-dev
+          packages: ragel cvs yasm pax nasm gperf autogen autoconf-archive
           
       - name: Install pip dependencies
         run: pip -q install  -r https://raw.githubusercontent.com/xdeadboy666x/ffmpeg-autobuild/refs/heads/main/requirements.txt --upgrade --user
@@ -107,20 +116,10 @@ jobs:
         run: |
           echo date-time=$(date +'%Y-%m-%d %H:%M') >> $GITHUB_OUTPUT
           
-      - name: Cache FFmpeg builds
-        id: cache-ffmpeg
-        uses: actions/cache@v4
-        with:
-          path: ${{ github.workspace }}/sandbox
-          key: FFmpeg-${{ runner.os }}-${{ env.CACHE_KEY }}-${{ needs.check.outputs.helper-git-sha-short }}
-          restore-keys: |
-            FFmpeg-${{ runner.os }}-${{ env.CACHE_KEY }}-
-            FFmpeg-${{ runner.os }}-
-
       - name: Compile FFmpeg ${{ needs.check.outputs.git-sha-short }} using ffmpeg-windows-build-helpers ${{ needs.check.outputs.helper-git-sha-short }}
         run: |
           export TERM=xterm
-          bash ./cross_compile_ffmpeg.sh --ffmpeg-source-dir=$GITHUB_WORKSPACE/ffmpeg-source --gcc-cpu-count=$(nproc) --disable-nonfree=n --sandbox-ok=y --compiler-flavors=${{ matrix.os }}
+          bash ./cross_compile_ffmpeg.sh --ffmpeg-source-dir=$GITHUB_WORKSPACE/ffmpeg-source --gcc-cpu-count=$(nproc) --build-cpu-count=$(nproc) --disable-nonfree=n --sandbox-ok=y --build-intel-qsv=y --build-lsw=y --build-svt-hevc=y --compiler-flavors=${{ matrix.os }}
 
       - name: Install Wine
         run: sudo apt-get install -y wine64
@@ -157,10 +156,10 @@ jobs:
       id-token: write
       attestations: write
     needs: [check, build]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
-        os: [win64]
+        os: [win64, win32]
 
     steps:
       - name: Download FFmpeg binaries
@@ -209,7 +208,7 @@ jobs:
       - name: Release FFmpeg archives
         run: |
           gh release create "${{ needs.build.outputs.date-time-after-tag }}-${{ needs.check.outputs.git-sha-short }}-${{ needs.check.outputs.helper-git-sha-short }}" \
-          ffmpeg-${{ needs.check.outputs.git-sha-short }}-${{ needs.check.outputs.helper-git-sha-short }}-win64-nonfree.7z \
+          ffmpeg-${{ needs.check.outputs.git-sha-short }}-${{ needs.check.outputs.helper-git-sha-short }}-{win64,win32}-nonfree.7z \
           -n "FFmpeg nonfree git-${{ needs.check.outputs.git-sha }} in ${{ needs.build.outputs.git-date }} built on ${{ needs.build.outputs.date-time-after }} started at ${{ needs.build.outputs.date-time-before }}
           Using ${{ needs.check.outputs.helper-git-owner }}/ffmpeg-windows-build-helpers git-${{ needs.check.outputs.helper-git-sha }}" \
           -t "${{ needs.build.outputs.date-time-after }} ${{ needs.check.outputs.git-sha-short }}"
