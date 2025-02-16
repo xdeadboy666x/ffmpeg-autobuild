@@ -105,7 +105,6 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          working-directory: ffmpeg-source
           python-version: '3.11'
           cache: 'pip'
       - run: pip install -r "https://raw.githubusercontent.com/xdeadboy666x/ffmpeg-autobuild/refs/heads/main/requirements.txt" --user
