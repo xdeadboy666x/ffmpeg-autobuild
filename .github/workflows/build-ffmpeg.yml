@@ -72,6 +72,8 @@ jobs:
         os: [win64, win32]
 
     steps:
+      - run: sudo dpkg --add-architecture i386
+      
       - name: Install APT dependencies
         uses: awalsh128/cache-apt-pkgs-action@latest
         with:
@@ -128,7 +130,9 @@ jobs:
           ./cross_compile_ffmpeg.sh --ffmpeg-source-dir=$GITHUB_WORKSPACE/ffmpeg-source --gcc-cpu-count=$(nproc) --build-cpu-count=$(nproc) --disable-nonfree=n --sandbox-ok=y --build-intel-qsv=y --build-svt-hevc=y --compiler-flavors=${{ matrix.os }}
 
       - name: Install Wine
-        run: sudo apt-get install -y libwine wine64
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wine64 wine32 libwine
 
       - name: Verify FFmpeg binary
         run: |
