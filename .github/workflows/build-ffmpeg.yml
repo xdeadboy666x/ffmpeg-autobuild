@@ -128,7 +128,7 @@ jobs:
           ./cross_compile_ffmpeg.sh --ffmpeg-source-dir=$GITHUB_WORKSPACE/ffmpeg-source --gcc-cpu-count=$(nproc) --build-cpu-count=$(nproc) --disable-nonfree=n --sandbox-ok=y --build-intel-qsv=y --build-svt-hevc=y --compiler-flavors=${{ matrix.os }}
 
       - name: Install Wine
-        run: sudo apt-get install -y wine64
+        run: sudo apt-get install -y wine32 0wine64
 
       - name: Verify FFmpeg binary
         run: |
