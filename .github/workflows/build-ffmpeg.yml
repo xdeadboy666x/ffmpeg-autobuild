@@ -81,8 +81,10 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
+          python-version: '3.11'
           cache: 'pip'
-      - run: pip install -r https://raw.githubusercontent.com/xdeadboy666x/ffmpeg-autobuild/refs/heads/main/requirements.txt --user
+      - run: |
+          pip install -r "https://raw.githubusercontent.com/xdeadboy666x/ffmpeg-autobuild/refs/heads/main/requirements.txt" --user
       
       - name: Checkout ${{ needs.check.outputs.helper-git-owner }}/ffmpeg-windows-build-helpers
         uses: actions/checkout@v4
@@ -121,7 +123,9 @@ jobs:
             FFmpeg-${{ runner.os }}-
     
       - name: Compile FFmpeg ${{ needs.check.outputs.git-sha-short }} using ffmpeg-windows-build-helpers ${{ needs.check.outputs.helper-git-sha-short }}
-        run: export TERM=xterm && ./cross_compile_ffmpeg.sh --ffmpeg-source-dir=$GITHUB_WORKSPACE/ffmpeg-source --gcc-cpu-count=$(nproc) --build-cpu-count=$(nproc) --disable-nonfree=n --sandbox-ok=y --build-intel-qsv=y --build-svt-hevc=y --compiler-flavors=${{ matrix.os }}
+        run: |
+          export TERM=xterm
+          ./cross_compile_ffmpeg.sh --ffmpeg-source-dir=$GITHUB_WORKSPACE/ffmpeg-source --gcc-cpu-count=$(nproc) --build-cpu-count=$(nproc) --disable-nonfree=n --sandbox-ok=y --build-intel-qsv=y --build-svt-hevc=y --compiler-flavors=${{ matrix.os }}
 
       - name: Install Wine
         run: sudo apt-get install -y wine64
