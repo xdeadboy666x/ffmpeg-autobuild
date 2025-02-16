@@ -72,16 +72,18 @@ jobs:
         os: [win64, win32]
 
     steps:
-      - name: Cache FFmpeg builds
-        id: cache-ffmpeg
-        uses: actions/cache@v4
+      - name: Install APT dependencies
+        uses: awalsh128/cache-apt-pkgs-action@latest
         with:
-          path: $GITHUB_WORKSPACE/sandbox/cross_compilers
-          key: FFmpeg-${{ runner.os }}-${{ env.CACHE_KEY }}-${{ needs.check.outputs.helper-git-sha-short }}
-          restore-keys: |
-            FFmpeg-${{ runner.os }}-${{ env.CACHE_KEY }}-
-            FFmpeg-${{ runner.os }}-
-
+          packages: ragel cvs yasm pax nasm gperf autogen autoconf-archive
+          version: 1.0
+          
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          cache: 'pip'
+      - run: pip install -r https://raw.githubusercontent.com/xdeadboy666x/ffmpeg-autobuild/refs/heads/main/requirements.txt --user
+      
       - name: Checkout ${{ needs.check.outputs.helper-git-owner }}/ffmpeg-windows-build-helpers
         uses: actions/checkout@v4
         with:
@@ -97,18 +99,6 @@ jobs:
           persist-credentials: false
           path: ffmpeg-source
           
-      - name: Install APT dependencies
-        uses: awalsh128/cache-apt-pkgs-action@latest
-        with:
-          packages: ragel cvs yasm pax nasm gperf autogen autoconf-archive
-          version: 1.0
-          
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          cache: 'pip'
-      - run: pip install -r https://raw.githubusercontent.com/xdeadboy666x/ffmpeg-autobuild/refs/heads/main/requirements.txt --user
-
       - name: Get current FFmpeg git date
         id: git-date
         working-directory: ffmpeg-source
@@ -119,7 +109,17 @@ jobs:
         id: date-time-before
         run: |
           echo date-time=$(date +'%Y-%m-%d %H:%M') >> $GITHUB_OUTPUT
-          
+
+      - name: Cache FFmpeg builds
+        id: cache-ffmpeg
+        uses: actions/cache@v4
+        with:
+          path: $GITHUB_WORKSPACE/sandbox/cross_compilers
+          key: FFmpeg-${{ runner.os }}-${{ env.CACHE_KEY }}-${{ needs.check.outputs.helper-git-sha-short }}
+          restore-keys: |
+            FFmpeg-${{ runner.os }}-${{ env.CACHE_KEY }}-
+            FFmpeg-${{ runner.os }}-
+    
       - name: Compile FFmpeg ${{ needs.check.outputs.git-sha-short }} using ffmpeg-windows-build-helpers ${{ needs.check.outputs.helper-git-sha-short }}
         run: export TERM=xterm && ./cross_compile_ffmpeg.sh --ffmpeg-source-dir=$GITHUB_WORKSPACE/ffmpeg-source --gcc-cpu-count=$(nproc) --build-cpu-count=$(nproc) --disable-nonfree=n --sandbox-ok=y --build-intel-qsv=y --build-svt-hevc=y --compiler-flavors=${{ matrix.os }}
 
