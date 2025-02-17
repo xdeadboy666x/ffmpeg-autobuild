@@ -1,5 +1,5 @@
 # FFmpeg Latest Autobuilds for Windows
-[![Build FFmpeg](https://github.com/xdeadboy666x/ffmpeg-autobuild/actions/workflows/build-ffmpeg.yaml/badge.svg)](https://github.com/xdeadboy666x/ffmpeg-autobuild/actions/workflows/build-ffmpeg.yaml)
+[![Build FFmpeg](https://github.com/xdeadboy666x/ffmpeg-autobuild/actions/workflows/build-ffmpeg.yml/badge.svg)](https://github.com/xdeadboy666x/ffmpeg-autobuild/actions/workflows/build-ffmpeg.yml)
 
 [FFmpeg](https://ffmpeg.org) latest nonfree git/snapshot/development/master/nightly builds with additional libraries/dependencies.
 
