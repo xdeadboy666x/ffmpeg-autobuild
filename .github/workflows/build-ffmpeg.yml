@@ -144,6 +144,10 @@ jobs:
       - name: Verify FFmpeg binary
         run: |
           wine ./ffmpeg-source/ffmpeg.exe -version
+          wine ./ffmpeg-source/ffmpeg.exe -codecs
+          wine ./ffmpeg-source/ffmpeg.exe -encoders
+          wine ./ffmpeg-source/ffmpeg.exe -decoders
+          wine ./ffmpeg-source/ffmpeg.exe -filters
 
       - name: Get current date & time after build
         id: date-time-after
