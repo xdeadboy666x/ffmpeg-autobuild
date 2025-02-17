@@ -117,9 +117,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: /home/runner/work/ffmpeg-autobuild/ffmpeg-autobuild/sandbox/
-          key: ${{ env.CACHE_KEY }}-FFmpeg-
-          restore-keys: |
-            ${{ env.CACHE_KEY }}-FFmpeg-
+          key: ${{ env.CACHE_KEY }}-FFmpeg ${{ needs.check.outputs.git-sha-short }} using ffmpeg-windows-build-helpers ${{ needs.check.outputs.helper-git-sha-short }}
     
       - name: Compile FFmpeg ${{ needs.check.outputs.git-sha-short }} using ffmpeg-windows-build-helpers ${{ needs.check.outputs.helper-git-sha-short }}
         run: |
@@ -130,7 +128,7 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: /home/runner/work/ffmpeg-autobuild/ffmpeg-autobuild/sandbox/
-          key: ${{ env.CACHE_KEY }}-FFmpeg-
+          key: ${{ env.CACHE_KEY }}-FFmpeg ${{ needs.check.outputs.git-sha-short }} using ffmpeg-windows-build-helpers ${{ needs.check.outputs.helper-git-sha-short }}
            
       - run: sudo dpkg --add-architecture i386
       - run: sudo mkdir -pm755 /etc/apt/keyrings && sudo wget -O /etc/apt/keyrings/winehq-archive.key https://dl.winehq.org/wine-builds/winehq.key
