@@ -116,7 +116,7 @@ jobs:
         id: cache-ffmpeg-restore
         uses: actions/cache@v4
         with:
-          path: $GITHUB_WORKSPACE/sandbox/cross_compilers
+          path: $GITHUB_WORKSPACE/ffmpeg-source/cross_compilers
           key: ${{ runner.os }}-FFmpeg-${{ env.CACHE_KEY }}
           restore-keys: |
             ${{ runner.os }}-FFmpeg-
@@ -129,7 +129,7 @@ jobs:
         id: cache-ffmpeg-save
         uses: actions/cache/save@v4
         with:
-          path: $GITHUB_WORKSPACE/sandbox/cross_compilers
+          path: $GITHUB_WORKSPACE/ffmpeg-source/cross_compilers
           key: ${{ runner.os }}-FFmpeg-${{ env.CACHE_KEY }}
            
       - run: sudo dpkg --add-architecture i386
