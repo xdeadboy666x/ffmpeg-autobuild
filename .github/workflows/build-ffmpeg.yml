@@ -72,7 +72,6 @@ jobs:
         os: [win64, win32]
 
     steps:
-      - run: sudo apt-get install ppa-purge && sudo ppa-purge -y ppa:ubuntu-toolchain-r/test
       # Install Wine
       - run: sudo dpkg --add-architecture i386
       - run: sudo mkdir -pm755 /etc/apt/keyrings && sudo wget -O /etc/apt/keyrings/winehq-archive.key https://dl.winehq.org/wine-builds/winehq.key
