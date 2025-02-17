@@ -114,7 +114,7 @@ jobs:
       
       - name: Cache FFmpeg
         id: cache-ffmpeg-restore
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
         with:
           path: /home/runner/work/ffmpeg-autobuild/ffmpeg-autobuild/sandbox/
           key: ${{ env.CACHE_KEY }}-FFmpeg-
