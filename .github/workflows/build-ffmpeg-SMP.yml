@@ -96,14 +96,14 @@ jobs:
       - name: Checkout FFmpeg
         uses: actions/checkout@v4
         with:
-          repository: FFmpeg/FFmpeg
+          repository: ShiftMediaProject/FFmpeg
           ref: ${{ needs.check.outputs.git-sha }}
           persist-credentials: false
-          path: ffmpeg-source
+          path: ffmpeg-source/SMP
           
       - name: Get current FFmpeg git date
         id: git-date
-        working-directory: ffmpeg-source
+        working-directory: ffmpeg-source/SMP
         run: |
           echo git-date=$(git log -1 --format=%ci) >> $GITHUB_OUTPUT
 
@@ -116,18 +116,18 @@ jobs:
         id: cache-ffmpeg-restore
         uses: actions/cache/restore@v4
         with:
-          path: /home/runner/work/ffmpeg-autobuild/ffmpeg-autobuild/sandbox/
+          path: /home/runner/work/ffmpeg-autobuild/ffmpeg-autobuild/SMP/sandbox/
           key: ${{ env.CACHE_KEY }}-FFmpeg ${{ needs.check.outputs.git-sha-short }} using ffmpeg-windows-build-helpers ${{ needs.check.outputs.helper-git-sha-short }}
     
       - name: Compile FFmpeg ${{ needs.check.outputs.git-sha-short }} using ffmpeg-windows-build-helpers ${{ needs.check.outputs.helper-git-sha-short }}
         run: |
-          ./cross_compile_ffmpeg.sh --ffmpeg-source-dir=$GITHUB_WORKSPACE/ffmpeg-source --gcc-cpu-count=$(nproc) --build-cpu-count=$(nproc) --disable-nonfree=n --sandbox-ok=y --build-intel-qsv=y --build-svt-hevc=y --compiler-flavors=${{ matrix.os }}
+          ./cross_compile_ffmpeg.sh --ffmpeg-source-dir=$GITHUB_WORKSPACE/ffmpeg-source/SMP --gcc-cpu-count=$(nproc) --build-cpu-count=$(nproc) --disable-nonfree=n --sandbox-ok=y --build-intel-qsv=y --build-svt-hevc=y --compiler-flavors=${{ matrix.os }}
 
       - name: Save FFmpeg
         id: cache-ffmpeg-save
         uses: actions/cache/save@v4
         with:
-          path: /home/runner/work/ffmpeg-autobuild/ffmpeg-autobuild/sandbox/
+          path: /home/runner/work/ffmpeg-autobuild/ffmpeg-autobuild/SMP/sandbox/
           key: ${{ env.CACHE_KEY }}-FFmpeg ${{ needs.check.outputs.git-sha-short }} using ffmpeg-windows-build-helpers ${{ needs.check.outputs.helper-git-sha-short }}
            
       - run: sudo dpkg --add-architecture i386
@@ -141,11 +141,11 @@ jobs:
    
       - name: Verify FFmpeg binary
         run: |
-          wine ./ffmpeg-source/ffmpeg.exe -version
-          wine ./ffmpeg-source/ffmpeg.exe -codecs
-          wine ./ffmpeg-source/ffmpeg.exe -encoders
-          wine ./ffmpeg-source/ffmpeg.exe -decoders
-          wine ./ffmpeg-source/ffmpeg.exe -filters
+          wine ./ffmpeg-source/SMP/ffmpeg.exe -version
+          wine ./ffmpeg-source/SMP/ffmpeg.exe -codecs
+          wine ./ffmpeg-source/SMP/ffmpeg.exe -encoders
+          wine ./ffmpeg-source/SMP/ffmpeg.exe -decoders
+          wine ./ffmpeg-source/SMP/ffmpeg.exe -filters
 
       - name: Get current date & time after build
         id: date-time-after
@@ -158,9 +158,9 @@ jobs:
         with:
           name: ffmpeg-${{ matrix.os }}
           path: |
-            ffmpeg-source/ffmpeg.exe
-            ffmpeg-source/ffprobe.exe
-            ffmpeg-source/ffplay.exe
+            ffmpeg-source/SMP/ffmpeg.exe
+            ffmpeg-source/SMP/ffprobe.exe
+            ffmpeg-source/SMP/ffplay.exe
           if-no-files-found: error
           retention-days: ${{ inputs.no_release && '0' || '1' }}
           
