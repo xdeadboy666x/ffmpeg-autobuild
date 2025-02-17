@@ -72,16 +72,6 @@ jobs:
         os: [win64, win32]
 
     steps:
-      # Install Wine
-      - run: sudo dpkg --add-architecture i386
-      - run: sudo mkdir -pm755 /etc/apt/keyrings && sudo wget -O /etc/apt/keyrings/winehq-archive.key https://dl.winehq.org/wine-builds/winehq.key
-      - run: sudo wget -NP /etc/apt/sources.list.d/ https://dl.winehq.org/wine-builds/ubuntu/dists/jammy/winehq-jammy.sources
-      - run: sudo apt-get update
-      - run: sudo apt install wine32 libwine wine64
-      - run: sudo apt install --install-recommends winehq-stable
-      # Install mono
-      - run: sudo mkdir -p /opt/wine/mono && sudo wget "https://dl.winehq.org/wine/wine-mono/8.0.0/wine-mono-8.0.0-x86.tar.xz" -P /opt/wine/mono && sudo tar -xf /opt/wine/mono/wine-mono-8.0.0-x86.tar.xz -C /opt/wine/mono && sudo rm /opt/wine/mono/wine-mono-8.0.0-x86.tar.xz
-   
       - name: Install APT dependencies
         uses: awalsh128/cache-apt-pkgs-action@latest
         with:
@@ -92,7 +82,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-          cache: 'pip'
+          cache: '~/.pip'
       - run: |
           pip install -r "https://raw.githubusercontent.com/xdeadboy666x/ffmpeg-autobuild/refs/heads/main/requirements.txt" --user
       
@@ -141,7 +131,16 @@ jobs:
         with:
           path: $GITHUB_WORKSPACE/sandbox/cross_compilers
           key: ${{ runner.os }}-FFmpeg-${{ env.CACHE_KEY }}
-     
+           
+      - run: sudo dpkg --add-architecture i386
+      - run: sudo mkdir -pm755 /etc/apt/keyrings && sudo wget -O /etc/apt/keyrings/winehq-archive.key https://dl.winehq.org/wine-builds/winehq.key
+      - run: sudo wget -NP /etc/apt/sources.list.d/ https://dl.winehq.org/wine-builds/ubuntu/dists/jammy/winehq-jammy.sources
+      - run: sudo apt-get update
+      - run: sudo apt install wine32 libwine wine64
+      - run: sudo apt install --install-recommends winehq-stable
+      # Install mono
+      - run: sudo mkdir -p /opt/wine/mono && sudo wget "https://dl.winehq.org/wine/wine-mono/8.0.0/wine-mono-8.0.0-x86.tar.xz" -P /opt/wine/mono && sudo tar -xf /opt/wine/mono/wine-mono-8.0.0-x86.tar.xz -C /opt/wine/mono && sudo rm /opt/wine/mono/wine-mono-8.0.0-x86.tar.xz
+   
       - name: Verify FFmpeg binary
         run: |
           wine ./ffmpeg-source/ffmpeg.exe -version
