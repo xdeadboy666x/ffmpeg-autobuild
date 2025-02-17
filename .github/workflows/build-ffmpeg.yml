@@ -72,12 +72,21 @@ jobs:
         os: [win64, win32]
 
     steps:
+      - run: sudo apt-get install ppa-purge && sudo ppa-purge -y ppa:ubuntu-toolchain-r/test
+      # Install Wine
       - run: sudo dpkg --add-architecture i386
-      
+      - run: sudo mkdir -pm755 /etc/apt/keyrings && sudo wget -O /etc/apt/keyrings/winehq-archive.key https://dl.winehq.org/wine-builds/winehq.key
+      - run: sudo wget -NP /etc/apt/sources.list.d/ https://dl.winehq.org/wine-builds/ubuntu/dists/jammy/winehq-jammy.sources
+      - run: sudo apt-get update
+      - run: sudo apt install wine32 libwine wine64
+      - run: sudo apt install --install-recommends winehq-stable
+      # Install mono
+      - run: sudo mkdir -p /opt/wine/mono && sudo wget "https://dl.winehq.org/wine/wine-mono/8.0.0/wine-mono-8.0.0-x86.tar.xz" -P /opt/wine/mono && sudo tar -xf /opt/wine/mono/wine-mono-8.0.0-x86.tar.xz -C /opt/wine/mono && sudo rm /opt/wine/mono/wine-mono-8.0.0-x86.tar.xz
+   
       - name: Install APT dependencies
         uses: awalsh128/cache-apt-pkgs-action@latest
         with:
-          packages: ragel cvs yasm pax nasm gperf autogen autoconf-archive
+          packages: ragel cvs yasm pax nasm gperf autogen autoconf-archive 
           version: 1.0
           
       - uses: actions/checkout@v4
@@ -113,27 +122,27 @@ jobs:
         id: date-time-before
         run: |
           echo date-time=$(date +'%Y-%m-%d %H:%M') >> $GITHUB_OUTPUT
-
-      - name: Cache FFmpeg builds
-        id: cache-ffmpeg
+      
+      - name: Cache FFmpeg
+        id: cache-ffmpeg-restore
         uses: actions/cache@v4
         with:
           path: $GITHUB_WORKSPACE/sandbox/cross_compilers
-          key: FFmpeg-${{ runner.os }}-${{ env.CACHE_KEY }}-${{ needs.check.outputs.helper-git-sha-short }}
+          key: ${{ runner.os }}-FFmpeg-${{ env.CACHE_KEY }}
           restore-keys: |
-            FFmpeg-${{ runner.os }}-${{ env.CACHE_KEY }}-
-            FFmpeg-${{ runner.os }}-
+            ${{ runner.os }}-FFmpeg-
     
       - name: Compile FFmpeg ${{ needs.check.outputs.git-sha-short }} using ffmpeg-windows-build-helpers ${{ needs.check.outputs.helper-git-sha-short }}
         run: |
-          export TERM=xterm
           ./cross_compile_ffmpeg.sh --ffmpeg-source-dir=$GITHUB_WORKSPACE/ffmpeg-source --gcc-cpu-count=$(nproc) --build-cpu-count=$(nproc) --disable-nonfree=n --sandbox-ok=y --build-intel-qsv=y --build-svt-hevc=y --compiler-flavors=${{ matrix.os }}
 
-      - name: Install Wine
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y wine64 wine32 libwine
-
+      - name: Save FFmpeg
+        id: cache-ffmpeg-save
+        uses: actions/cache/save@v4
+        with:
+          path: $GITHUB_WORKSPACE/sandbox/cross_compilers
+          key: ${{ runner.os }}-FFmpeg-${{ env.CACHE_KEY }}
+     
       - name: Verify FFmpeg binary
         run: |
           wine ./ffmpeg-source/ffmpeg.exe -version
