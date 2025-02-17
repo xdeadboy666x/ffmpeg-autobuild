@@ -82,8 +82,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-          cache: ~/.cache/pip
-      - run: |
+        run: |
           pip install -r "https://raw.githubusercontent.com/xdeadboy666x/ffmpeg-autobuild/refs/heads/main/requirements.txt" --user
       
       - name: Checkout ${{ needs.check.outputs.helper-git-owner }}/ffmpeg-windows-build-helpers
