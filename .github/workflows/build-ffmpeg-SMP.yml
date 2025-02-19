@@ -20,12 +20,12 @@ concurrency:
   
 jobs:
   check:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu 22.04
     steps:
       - name: Get FFmpeg latest commit
         id: ffmpeg-info
         run: |
-          git_sha=$(gh api repos/FFmpeg/FFmpeg/commits/master -q .sha)
+          git_sha=$(gh api repos/ShiftMediaProject/FFmpeg/commits/master -q .sha)
           echo git-sha=$git_sha >> $GITHUB_OUTPUT
           echo git-sha-short=${git_sha::7} >> $GITHUB_OUTPUT
         env:
@@ -216,7 +216,7 @@ jobs:
   release:
     needs: [check, build, archive]
     if: '! inputs.no_release'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu 22.04
     steps:
       - name: Download FFmpeg archives
         uses: actions/download-artifact@v4
