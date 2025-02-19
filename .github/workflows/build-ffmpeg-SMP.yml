@@ -20,7 +20,7 @@ concurrency:
   
 jobs:
   check:
-    runs-on: ubuntu 22.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Get FFmpeg latest commit
         id: ffmpeg-info
@@ -216,7 +216,7 @@ jobs:
   release:
     needs: [check, build, archive]
     if: '! inputs.no_release'
-    runs-on: ubuntu 22.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Download FFmpeg archives
         uses: actions/download-artifact@v4
