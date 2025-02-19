@@ -116,7 +116,7 @@ jobs:
         id: cache-ffmpeg-restore
         uses: actions/cache/restore@v4
         with:
-          path: /home/runner/work/ffmpeg-autobuild/ffmpeg-autobuild/SMP/sandbox/
+          path: ffmpeg-source
           key: ${{ env.CACHE_KEY }}-FFmpeg ${{ needs.check.outputs.git-sha-short }} using ffmpeg-windows-build-helpers ${{ needs.check.outputs.helper-git-sha-short }}
     
       - name: Compile FFmpeg ${{ needs.check.outputs.git-sha-short }} using ffmpeg-windows-build-helpers ${{ needs.check.outputs.helper-git-sha-short }}
@@ -127,7 +127,7 @@ jobs:
         id: cache-ffmpeg-save
         uses: actions/cache/save@v4
         with:
-          path: /home/runner/work/ffmpeg-autobuild/ffmpeg-autobuild/SMP/sandbox/
+          path: ffmpeg-source
           key: ${{ env.CACHE_KEY }}-FFmpeg ${{ needs.check.outputs.git-sha-short }} using ffmpeg-windows-build-helpers ${{ needs.check.outputs.helper-git-sha-short }}
            
       - run: sudo dpkg --add-architecture i386
