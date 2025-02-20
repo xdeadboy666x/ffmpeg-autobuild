@@ -72,6 +72,7 @@ jobs:
         os: [win64, win32]
 
     steps:
+      - uses: actions/checkout@v4
       - name: APT
         uses: awalsh128/cache-apt-pkgs-action@latest
         with:
