@@ -1,4 +1,4 @@
-name: Build FFmpeg-SMP
+name: Build FFmpeg-stable
 on:
   schedule:
     - cron: '7 11 * * 0'
@@ -163,9 +163,9 @@ jobs:
         with:
           name: ffmpeg-${{ matrix.os }}
           path: |
-            ffmpeg-source/SMP/ffmpeg.exe
-            ffmpeg-source/SMP/ffprobe.exe
-            ffmpeg-source/SMP/ffplay.exe
+            ffmpeg-source/ffmpeg.exe
+            ffmpeg-source/ffprobe.exe
+            ffmpeg-source/ffplay.exe
           if-no-files-found: error
           retention-days: ${{ inputs.no_release && '0' || '1' }}
           
