@@ -36,7 +36,7 @@ jobs:
           git_sha=$(gh api repos/$git_owner/ffmpeg-windows-build-helpers/commits/master -q .sha)
           echo git-owner=$git_owner >> $GITHUB_OUTPUT
           echo git-sha=$git_sha >> $GITHUB_OUTPUT
-          echo git-sha-short=${git_sha::7} >> $GITHUB_OUTPUT
+          echo git-sha-short=${git_sha:7} >> $GITHUB_OUTPUT
         env:
           GH_TOKEN: ${{ secrets.TOKEN_REPO }}
           
@@ -83,7 +83,6 @@ jobs:
           ref: ${{ needs.check.outputs.helper-git-sha }}
           persist-credentials: false
           
-      - uses: actions/checkout@v4
       - name: Read package list
         id: read-packages
         run: echo "PACKAGES=$(tr '\n' ' ' < apt-packages.txt)" >> $GITHUB_ENV
@@ -106,9 +105,10 @@ jobs:
         id: date-time-before
         run: echo date-time=$(date +'%Y-%m-%d %H:%M') >> $GITHUB_OUTPUT
         
-      - name: Compile FFmpeg ${{ needs.check.outputs.version }} using ffmpeg-windows-build-helpers ${{ needs.check.outputs.helper-git-sha-short }}
-        run: ./cross_compile_ffmpeg.sh --ffmpeg-git-checkout-version=n${{ needs.check.outputs.version }} --gcc-cpu-count=$(nproc) --disable-nonfree=n --sandbox-ok=y --compiler-flavors=${{ matrix.os }}
-        
+      - name: Compile FFmpeg ${{ needs.check.outputs.git-sha-short }} using ffmpeg-windows-build-helpers ${{ needs.check.outputs.helper-git-sha-short }}
+        run: |
+          ./cross_compile_ffmpeg.sh --ffmpeg-source-dir=$GITHUB_WORKSPACE/ffmpeg-source --gcc-cpu-count=$(nproc) --build-cpu-count=$(nproc) --disable-nonfree=n --sandbox-ok=y --compiler-flavors=${{ matrix.os }}
+
       - name: Get current date & time after build
         id: date-time-after
         run: |
