@@ -40,8 +40,8 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.TOKEN_REPO }}
           
-      - name: Get ffmpeg-stable-autobuild latest build
-        id: ffmpeg-stable-autobuild-info
+      - name: Get ffmpeg-autobuild latest build
+        id: ffmpeg-autobuild-info
         run: |
           tag_name=$(gh api repos/$GITHUB_REPOSITORY/releases/latest -q .tag_name || echo "fallback-tag")
     
