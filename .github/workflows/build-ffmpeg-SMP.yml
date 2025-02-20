@@ -77,11 +77,11 @@ jobs:
         id: read-packages
         run: echo "PACKAGES=$(tr '\n' ' ' < apt-packages.txt)" >> $GITHUB_ENV
 
-     - name: Cache APT packages
-       uses: awalsh128/cache-apt-pkgs-action@latest
-       with:
-         packages: "${{ env.PACKAGES }}"
-         version: 1.0
+      - name: Cache APT packages
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: "${{ env.PACKAGES }}"
+          version: 1.0
       
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
