@@ -73,14 +73,16 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-      - name: APT
-        uses: awalsh128/cache-apt-pkgs-action@latest
-        with:
-          path: ~/cache-apt-pkgs 
-          key: cache-apt-pkgs_${{ runner.os }}_${{ hashFiles('apt-packages.txt') }}
-          enableCrossOsArchive: false
-          fail-on-cache-miss: false
-          
+      - name: Read package list
+        id: read-packages
+        run: echo "PACKAGES=$(tr '\n' ' ' < apt-packages.txt)" >> $GITHUB_ENV
+
+     - name: Cache APT packages
+       uses: awalsh128/cache-apt-pkgs-action@latest
+       with:
+         packages: "${{ env.PACKAGES }}"
+         version: 1.0
+      
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
