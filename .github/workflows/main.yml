@@ -1,0 +1,198 @@
+name: Build FFmpeg stable
+on:
+  schedule:
+    - cron: '7 11 * * 0'
+  workflow_dispatch:
+    inputs:
+      force_build:
+        description: Disable checking for newer commit
+        type: boolean
+      no_release:
+        description: Don't create release
+        type: boolean
+      use_own_fork:
+        description: Use own ffmpeg-windows-build-helpers fork
+        type: boolean
+  watch:
+    types: [started]
+    
+concurrency:
+  group: ${{ github.workflow }}
+  
+jobs:
+  check:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Get FFmpeg latest version
+        id: ffmpeg-info
+        run: |
+          version=$(curl -s https://endoflife.date/api/ffmpeg.json | jq -r .[0].latest)
+          echo version=${version%.0} >> $GITHUB_OUTPUT
+          
+      - name: Get ${{ inputs.use_own_fork && github.repository_owner || '' }}/ffmpeg-windows-build-helpers latest commit
+        id: ffmpeg-helper-info
+        run: |
+          git_owner=${{ inputs.use_own_fork && github.repository_owner || 'xdeadboy666x' }}
+          git_sha=$(gh api repos/$git_owner/ffmpeg-windows-build-helpers/commits/master -q .sha)
+          echo git-owner=$git_owner >> $GITHUB_OUTPUT
+          echo git-sha=$git_sha >> $GITHUB_OUTPUT
+          echo git-sha-short=${git_sha::7} >> $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ secrets.TOKEN_REPO }}
+          
+      - name: Get ffmpeg-stable-autobuild latest build
+        id: ffmpeg-stable-autobuild-info
+        run: |
+          tag_name=$(gh api repos/$GITHUB_REPOSITORY/releases/latest -q .tag_name || echo "fallback-tag")
+    
+          if [[ "$tag_name" == "fallback-tag" ]]; then
+            echo "Failed to fetch latest release tag, using fallback values"
+            echo git-sha=unknown >> $GITHUB_OUTPUT
+            echo helper-git-sha=unknown >> $GITHUB_OUTPUT
+           else
+            echo git-sha=${tag_name:17:7} >> $GITHUB_OUTPUT
+            echo helper-git-sha=${tag_name:25:7} >> $GITHUB_OUTPUT
+           fi
+        env:
+          GH_TOKEN: ${{ secrets.TOKEN_REPO }}
+
+      - name: Check if there is newer commit
+        if: '! inputs.force_build'
+        run: >
+          [[ "${{ steps.ffmpeg-info.outputs.git-sha-short }}" != "${{ steps.ffmpeg-autobuild-info.outputs.git-sha }}" ]] ||
+          [[ "${{ steps.ffmpeg-helper-info.outputs.git-sha-short }}" != "${{ steps.ffmpeg-autobuild-info.outputs.helper-git-sha }}" ]]
+
+    outputs:
+      version: ${{ steps.ffmpeg-info.outputs.version }}
+      helper-git-owner: ${{ steps.ffmpeg-helper-info.outputs.git-owner }}
+      helper-git-sha: ${{ steps.ffmpeg-helper-info.outputs.git-sha }}
+      helper-git-sha-short: ${{ steps.ffmpeg-helper-info.outputs.git-sha-short }}
+      
+  build:
+    needs: check
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        os: [win64, win32]
+        
+    steps:
+      - name: Checkout ${{ needs.check.outputs.helper-git-owner }}/ffmpeg-windows-build-helpers
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ needs.check.outputs.helper-git-owner }}/ffmpeg-windows-build-helpers
+          ref: ${{ needs.check.outputs.helper-git-sha }}
+          persist-credentials: false
+          
+      - uses: actions/checkout@v4
+      - name: Read package list
+        id: read-packages
+        run: echo "PACKAGES=$(tr '\n' ' ' < apt-packages.txt)" >> $GITHUB_ENV
+      
+      - run: sudo dpkg --add-architecture i386
+      - name: Cache APT packages
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: "${{ env.PACKAGES }}"
+          version: 1.0
+      
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: |
+          pip install -r "https://raw.githubusercontent.com/xdeadboy666x/ffmpeg-autobuild/refs/heads/main/requirements.txt"
+      
+      - name: Get current date & time before build
+        id: date-time-before
+        run: echo date-time=$(date +'%Y-%m-%d %H:%M') >> $GITHUB_OUTPUT
+        
+      - name: Compile FFmpeg ${{ needs.check.outputs.version }} using ffmpeg-windows-build-helpers ${{ needs.check.outputs.helper-git-sha-short }}
+        run: ./cross_compile_ffmpeg.sh --ffmpeg-git-checkout-version=n${{ needs.check.outputs.version }} --gcc-cpu-count=$(nproc) --disable-nonfree=n --sandbox-ok=y --compiler-flavors=${{ matrix.os }}
+        
+      - name: Get current date & time after build
+        id: date-time-after
+        run: |
+          echo date-time=$(date +'%Y-%m-%d %H:%M') >> $GITHUB_OUTPUT
+          echo date-time-tag=$(date +'%Y-%m-%d-%H-%M') >> $GITHUB_OUTPUT
+          
+      - name: Upload FFmpeg binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: ffmpeg-${{ matrix.os }}
+          path: |
+            sandbox/${{ matrix.os }}/ffmpeg_git_with_fdk_aac_n${{ needs.check.outputs.version }}/ffmpeg.exe
+            sandbox/${{ matrix.os }}/ffmpeg_git_with_fdk_aac_n${{ needs.check.outputs.version }}/ffprobe.exe
+            sandbox/${{ matrix.os }}/ffmpeg_git_with_fdk_aac_n${{ needs.check.outputs.version }}/ffplay.exe
+          if-no-files-found: error
+          retention-days: ${{ inputs.no_release && '0' || '1' }}
+          
+    outputs:
+      date-time-before: ${{ steps.date-time-before.outputs.date-time }}
+      date-time-after: ${{ steps.date-time-after.outputs.date-time }}
+      date-time-after-tag: ${{ steps.date-time-after.outputs.date-time-tag }}
+      
+  archive:
+    permissions:
+      id-token: write
+      attestations: write
+    needs: [check, build]
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        os: [win64, win32]
+        
+    steps:
+      - name: Download FFmpeg binaries
+        uses: actions/download-artifact@v4
+        with:
+          name: ffmpeg-${{ matrix.os }}
+          
+      - name: Create LICENSE
+        run: |
+          echo "This version of ffmpeg has nonfree parts compiled in." >> LICENSE
+          echo "Therefore it is not legally redistributable." >> LICENSE
+          
+      - name: Generate artifact attestation for FFmpeg binaries
+        if: '! inputs.no_release'
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: ff*.exe
+          
+      - name: 7-Zip FFmpeg binaries
+        run: 7z a -mx9 ffmpeg-${{ needs.check.outputs.version }}-${{ needs.check.outputs.helper-git-sha-short }}-${{ matrix.os }}-nonfree.7z ff{mpeg,probe,play}.exe LICENSE
+        
+      - name: Generate artifact attestation for FFmpeg archive
+        if: '! inputs.no_release'
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: ffmpeg-${{ needs.check.outputs.version }}-${{ needs.check.outputs.helper-git-sha-short }}-${{ matrix.os }}-nonfree.7z
+          
+      - name: Upload FFmpeg archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: ffmpeg-archive-${{ matrix.os }}
+          path: ffmpeg-${{ needs.check.outputs.version }}-${{ needs.check.outputs.helper-git-sha-short }}-${{ matrix.os }}-nonfree.7z
+          retention-days: ${{ inputs.no_release && '0' || '1' }}
+          compression-level: 0
+          
+  release:
+    needs: [check, build, archive]
+    if: '! inputs.no_release'
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Download FFmpeg archives
+        uses: actions/download-artifact@v4
+        with:
+          pattern: ffmpeg-archive-*
+          merge-multiple: true
+          
+      - name: Release FFmpeg archives
+        run: |
+          gh release create "${{ needs.build.outputs.date-time-after-tag }}-${{ needs.check.outputs.helper-git-sha-short }}-${{ needs.check.outputs.version }}" \
+          ffmpeg-${{ needs.check.outputs.version }}-${{ needs.check.outputs.helper-git-sha-short }}-{win64,win32}-nonfree.7z \
+          -n "FFmpeg nonfree ${{ needs.check.outputs.version }} built on ${{ needs.build.outputs.date-time-after }} started at ${{ needs.build.outputs.date-time-before }}
+          Using ${{ needs.check.outputs.helper-git-owner }}/ffmpeg-windows-build-helpers git-${{ needs.check.outputs.helper-git-sha }}" \
+          -t "${{ needs.check.outputs.version }} ${{ needs.build.outputs.date-time-after }} ${{ needs.check.outputs.helper-git-sha-short }}"
+        env:
+          GH_TOKEN: ${{ secrets.TOKEN_REPO }}
+          GH_REPO: ${{ github.repository }}
