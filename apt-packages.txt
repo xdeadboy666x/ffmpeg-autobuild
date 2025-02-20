@@ -8,13 +8,10 @@ gperf
 autogen
 autoconf-archive
 autoconf
+autogen
 automake
 build-essential
 cmake
-pkg-config
 make
 git
-i686-w64-mingw32-gcc
-i686-w64-mingw32-g++
-x86_64-w64-mingw32-g++
 libtool
