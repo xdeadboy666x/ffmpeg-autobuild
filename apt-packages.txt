@@ -11,8 +11,10 @@ autoconf
 automake
 build-essential
 cmake
-git-core
-libass-dev
-libfreetype6-dev
-libgnutls28-dev
-libmp3lame-dev
+pkg-config
+make
+git
+i686-w64-mingw32-gcc
+i686-w64-mingw32-g++
+x86_64-w64-mingw32-g++
+libtool
