@@ -28,6 +28,8 @@ jobs:
         run: |
           version=$(curl -s https://endoflife.date/api/ffmpeg.json | jq -r .[0].latest)
           echo version=${version%.0} >> $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ secrets.TOKEN_REPO }}
           
       - name: Get ${{ inputs.use_own_fork && github.repository_owner || '' }}/ffmpeg-windows-build-helpers latest commit
         id: ffmpeg-helper-info
@@ -76,12 +78,6 @@ jobs:
         os: [win64, win32]
         
     steps:
-      - name: Checkout ${{ needs.check.outputs.helper-git-owner }}/ffmpeg-windows-build-helpers
-        uses: actions/checkout@v4
-        with:
-          repository: ${{ needs.check.outputs.helper-git-owner }}/ffmpeg-windows-build-helpers
-          ref: ${{ needs.check.outputs.helper-git-sha }}
-          persist-credentials: false
           
       - name: Read package list
         id: read-packages
@@ -100,7 +96,14 @@ jobs:
           python-version: '3.11'
       - run: |
           pip install -r "https://raw.githubusercontent.com/xdeadboy666x/ffmpeg-autobuild/refs/heads/main/requirements.txt"
-      
+
+      - name: Checkout ${{ needs.check.outputs.helper-git-owner }}/ffmpeg-windows-build-helpers
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ needs.check.outputs.helper-git-owner }}/ffmpeg-windows-build-helpers
+          ref: ${{ needs.check.outputs.helper-git-sha }}
+          persist-credentials: false
+          
       - name: Get current date & time before build
         id: date-time-before
         run: echo date-time=$(date +'%Y-%m-%d %H:%M') >> $GITHUB_OUTPUT
