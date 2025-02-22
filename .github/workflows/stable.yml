@@ -87,7 +87,7 @@ jobs:
           persist-credentials: false
           path: ffmpeg-source
       
-     - name: Read package list
+      - name: Read package list
         id: read-packages
         run: echo "PACKAGES=$(tr '\n' ' ' < apt-packages.txt)" >> $GITHUB_ENV
       
