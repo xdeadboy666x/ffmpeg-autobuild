@@ -28,7 +28,6 @@ jobs:
         run: |
           version=$(curl -s https://endoflife.date/api/ffmpeg.json | jq -r .[0].latest)
           echo version=${version%.0} >> $GITHUB_OUTPUT
-
         env:
           GH_TOKEN: ${{ secrets.TOKEN_REPO }}
 
