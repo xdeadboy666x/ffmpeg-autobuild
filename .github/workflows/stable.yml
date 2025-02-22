@@ -78,40 +78,44 @@ jobs:
           ref: ${{ needs.check.outputs.helper-git-sha }}
           persist-credentials: false
       
-      - name: Read package list
-        id: read-packages
-        run: echo "PACKAGES=$(tr '\n' ' ' < apt-packages.txt)" >> $GITHUB_ENV
+#      - name: Read package list
+#        id: read-packages
+#        run: echo "PACKAGES=$(tr '\n' ' ' < apt-packages.txt)" >> $GITHUB_ENV
       
-      - run: sudo dpkg --add-architecture i386
-      - name: Cache APT packages
-        uses: awalsh128/cache-apt-pkgs-action@latest
+#      - run: sudo dpkg --add-architecture i386
+#      - name: Cache APT packages
+#        uses: awalsh128/cache-apt-pkgs-action@latest
+#        with:
+#          packages: "${{ env.PACKAGES }}"
+#          version: 1.0
+      - name: Install APT dependencies
+        uses: awalsh128/cache-apt-pkgs-action@v1
         with:
-          packages: "${{ env.PACKAGES }}"
-          version: 1.0
-      
+          packages: subversion ragel cvs yasm pax nasm gperf autogen autoconf-archive
+          
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
       - run: |
           pip3 install -r "https://raw.githubusercontent.com/xdeadboy666x/ffmpeg-autobuild/refs/heads/main/requirements.txt" --user
       
-      - name: Restore Cache FFmpeg
-        id: cache-ffmpeg-restore
-        uses: actions/cache/restore@v4
-        with:
-          path: ~/.ffmpeg-source
-          key: ${{ env.CACHE_KEY }}-FFmpeg-${{ needs.check.outputs.version }}
+#      - name: Restore Cache FFmpeg
+#        id: cache-ffmpeg-restore
+#        uses: actions/cache/restore@v4
+#        with:
+#          path: ~/.ffmpeg-source
+#          key: ${{ env.CACHE_KEY }}-FFmpeg-${{ needs.check.outputs.version }}
     
       - name: Compile FFmpeg ${{ needs.check.outputs.version }} using ffmpeg-windows-build-helpers ${{ needs.check.outputs.helper-git-sha-short }}
         run: |
           ./cross_compile_ffmpeg.sh --ffmpeg-git-checkout-version=n${{ needs.check.outputs.version }} --gcc-cpu-count=$(nproc) --build-cpu-count=$(nproc) --disable-nonfree=n --sandbox-ok=y --compiler-flavors=${{ matrix.os }}
 
-      - name: Save FFmpeg Cache
-        id: cache-ffmpeg-save
-        uses: actions/cache/save@v4
-        with:
-          path: ~/.ffmpeg-source
-          key: ${{ env.CACHE_KEY }}-FFmpeg-${{ needs.check.outputs.version }}
+#      - name: Save FFmpeg Cache
+#        id: cache-ffmpeg-save
+#        uses: actions/cache/save@v4
+#        with:
+#          path: ~/.ffmpeg-source
+#          key: ${{ env.CACHE_KEY }}-FFmpeg-${{ needs.check.outputs.version }}
           
       - run: sudo dpkg --add-architecture i386
       - run: sudo mkdir -pm755 /etc/apt/keyrings && sudo wget -O /etc/apt/keyrings/winehq-archive.key https://dl.winehq.org/wine-builds/winehq.key
