@@ -23,10 +23,10 @@ jobs:
   check:
     runs-on: ubuntu-22.04
     steps:
-      - name: Get FFmpeg latest commit
+      - name: Get FFmpeg 7.1 latest commit
         id: ffmpeg-info
         run: |
-          git_sha=$(gh api repos/FFmpeg/FFmpeg/commits/master -q .sha)
+          git_sha=$(gh api repos9/FFmpeg/FFmpeg/commits/release/7.1 -q .sha)
           echo git-sha=$git_sha >> $GITHUB_OUTPUT
           echo git-sha-short=${git_sha::7} >> $GITHUB_OUTPUT
         env:
@@ -71,26 +71,7 @@ jobs:
       matrix:
         os: [win64, win32]
 
-    steps:
-      - uses: actions/checkout@v4
-      - name: Read package list
-        id: read-packages
-        run: echo "PACKAGES=$(tr '\n' ' ' < apt-packages.txt)" >> $GITHUB_ENV
-      
-      - run: sudo dpkg --add-architecture i386
-      - name: Cache APT packages
-        uses: awalsh128/cache-apt-pkgs-action@latest
-        with:
-          packages: "${{ env.PACKAGES }}"
-          version: 1.0
-      
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-      - run: |
-          pip install -r "https://raw.githubusercontent.com/xdeadboy666x/ffmpeg-autobuild/refs/heads/main/requirements.txt" --user
-      
+    steps:      
       - name: Checkout ${{ needs.check.outputs.helper-git-owner }}/ffmpeg-windows-build-helpers
         uses: actions/checkout@v4
         with:
@@ -105,6 +86,23 @@ jobs:
           ref: release/7.1
           persist-credentials: false
           path: ffmpeg-source
+      
+     - name: Read package list
+        id: read-packages
+        run: echo "PACKAGES=$(tr '\n' ' ' < apt-packages.txt)" >> $GITHUB_ENV
+      
+      - run: sudo dpkg --add-architecture i386
+      - name: Cache APT packages
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: "${{ env.PACKAGES }}"
+          version: 1.0
+      
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: |
+          pip install -r "https://raw.githubusercontent.com/xdeadboy666x/ffmpeg-autobuild/refs/heads/main/requirements.txt" --user
           
       - name: Get current FFmpeg git date
         id: git-date
@@ -126,7 +124,7 @@ jobs:
     
       - name: Compile FFmpeg ${{ needs.check.outputs.version }} using ffmpeg-windows-build-helpers ${{ needs.check.outputs.helper-git-sha-short }}
         run: |
-          ./cross_compile_ffmpeg.sh --ffmpeg-source-dir=$GITHUB_WORKSPACE/ffmpeg-source --gcc-cpu-count=$(nproc) --build-cpu-count=$(nproc) --disable-nonfree=n --sandbox-ok=y --compiler-flavors=${{ matrix.os }}
+          ./cross_compile_ffmpeg.sh --ffmpeg-git-checkout-version=n${{ needs.check.outputs.version }} --gcc-cpu-count=$(nproc) --build-cpu-count=$(nproc) --disable-nonfree=n --sandbox-ok=y --compiler-flavors=${{ matrix.os }}
 
       - name: Save FFmpeg Cache
         id: cache-ffmpeg-save
@@ -146,11 +144,11 @@ jobs:
    
       - name: Verify FFmpeg binary
         run: |
-          wine ./ffmpeg-source/ffmpeg.exe -version
-          wine ./ffmpeg-source/ffmpeg.exe -codecs
-          wine ./ffmpeg-source/ffmpeg.exe -encoders
-          wine ./ffmpeg-source/ffmpeg.exe -decoders
-          wine ./ffmpeg-source/ffmpeg.exe -filters
+          wine ./sandbox/${{ matrix.os }}/ffmpeg_git_with_fdk_aac_n${{ needs.check.outputs.version }}/ffmpeg.exe -version
+          wine ./sandbox/${{ matrix.os }}/ffmpeg_git_with_fdk_aac_n${{ needs.check.outputs.version }}/ffmpeg.exe -codecs
+          wine ./sandbox/${{ matrix.os }}/ffmpeg_git_with_fdk_aac_n${{ needs.check.outputs.version }}/ffmpeg.exe -encoders
+          wine ./sandbox/${{ matrix.os }}/ffmpeg_git_with_fdk_aac_n${{ needs.check.outputs.version }}/ffmpeg.exe -decoders
+          wine ./sandbox/${{ matrix.os }}/ffmpeg_git_with_fdk_aac_n${{ needs.check.outputs.version }}/ffmpeg.exe -filters
 
       - name: Get current date & time after build
         id: date-time-after
@@ -163,9 +161,9 @@ jobs:
         with:
           name: ffmpeg-${{ matrix.os }}
           path: |
-            ffmpeg-source/ffmpeg.exe
-            ffmpeg-source/ffprobe.exe
-            ffmpeg-source/ffplay.exe
+            ./sandbox/${{ matrix.os }}/ffmpeg_git_with_fdk_aac_n${{ needs.check.outputs.version }}/ffmpeg.exe
+            ./sandbox/${{ matrix.os }}/ffmpeg_git_with_fdk_aac_n${{ needs.check.outputs.version }}/ffprobe.exe
+            ./sandbox/${{ matrix.os }}/ffmpeg_git_with_fdk_aac_n${{ needs.check.outputs.version }}/ffplay.exe
           if-no-files-found: error
           retention-days: ${{ inputs.no_release && '0' || '1' }}
     
