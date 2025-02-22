@@ -213,10 +213,11 @@ jobs:
 
       - name: Release FFmpeg archives
         run: |
-          gh release create "{{ needs.check.outputs.version }}-${{ needs.check.outputs.helper-git-sha-short }}" \
+          gh release create "v${{ needs.check.outputs.version }}-${{ needs.check.outputs.helper-git-sha-short }}" \
           ffmpeg-${{ needs.check.outputs.version }}-${{ needs.check.outputs.helper-git-sha-short }}-{win64,win32}-nonfree.7z \
           -n "FFmpeg nonfree using ${{ needs.check.outputs.helper-git-owner }}/ffmpeg-windows-build-helpers git-${{ needs.check.outputs.helper-git-sha }}" \
-          -t "${{ needs.check.outputs.version }}"
+          -t "v${{ needs.check.outputs.version }}"
         env:
           GH_TOKEN: ${{ secrets.TOKEN_REPO }}
           GH_REPO: ${{ github.repository }}
+    
