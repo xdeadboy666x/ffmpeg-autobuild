@@ -1,4 +1,4 @@
 setuptools
+docwriter
 meson
 ninja
-docwriter
