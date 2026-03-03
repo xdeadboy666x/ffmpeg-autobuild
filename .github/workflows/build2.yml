@@ -73,14 +73,14 @@ jobs:
 
     steps:
       - name: Checkout ${{ needs.check.outputs.ffmpeg-build-script-git-owner }}/ffmpeg-build-script
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: ${{ needs.check.outputs.ffmpeg-build-script-git-owner }}/ffmpeg-build-script
           ref: ${{ needs.check.outputs.ffmpeg-build-script-git-sha }}
           persist-credentials: false
 
       - name: Checkout FFmpeg
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: FFmpeg/FFmpeg
           ref: ${{ needs.check.outputs.git-sha }}
